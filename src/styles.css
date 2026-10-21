@@ -1216,8 +1216,34 @@ html:has(.companion),
 #root:has(.companion) {
   background: transparent !important;
 }
-.walking {
-  animation: walk-path 9s ease-in-out infinite;
+.resource-route {
+  animation: resource-route var(--route-duration) ease-in-out infinite;
+  animation-delay: var(--route-delay);
+}
+.route-outbound,
+.route-harvest,
+.route-return {
+  animation-duration: var(--route-duration);
+  animation-timing-function: steps(1, end);
+  animation-iteration-count: infinite;
+  animation-delay: var(--route-delay);
+}
+.route-outbound {
+  animation-name: route-outbound;
+}
+.route-harvest {
+  opacity: 0;
+  animation-name: route-harvest;
+}
+.route-return {
+  opacity: 0;
+  animation-name: route-return;
+}
+.route-return svg {
+  animation: carry-step 0.6s steps(1, end) infinite;
+}
+.face-left {
+  transform: scaleX(-1);
 }
 .worker-speech {
   display: none;
@@ -1239,19 +1265,61 @@ html:has(.companion),
 .paused * {
   animation-play-state: paused !important;
 }
-@keyframes walk-path {
+@keyframes resource-route {
   0%,
-  15%,
+  9%,
   100% {
     transform: translate(0, 0);
   }
-  40%,
-  55% {
-    transform: translate(12px, -7px);
+  38%,
+  54% {
+    transform: translate(var(--route-x), var(--route-y));
   }
-  75%,
-  85% {
-    transform: translate(-7px, -4px);
+  90% {
+    transform: translate(0, 0);
+  }
+}
+@keyframes route-outbound {
+  0%,
+  37% {
+    opacity: 1;
+  }
+  38%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes route-harvest {
+  0%,
+  37% {
+    opacity: 0;
+  }
+  38%,
+  53% {
+    opacity: 1;
+  }
+  54%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes route-return {
+  0%,
+  53% {
+    opacity: 0;
+  }
+  54%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes carry-step {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1px);
   }
 }
 @keyframes work-tool {
@@ -1286,6 +1354,13 @@ html:has(.companion),
   *:after {
     animation: none !important;
     transition: none !important;
+  }
+  .route-outbound {
+    opacity: 1;
+  }
+  .route-harvest,
+  .route-return {
+    opacity: 0;
   }
 }
 @media (max-width: 1200px) {

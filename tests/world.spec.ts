@@ -127,3 +127,41 @@ test('narrow viewport stays usable without horizontal overflow', async ({ page }
   await expect(page.getByRole('button', { name: 'Connections and settings' })).toBeVisible();
   await page.screenshot({ path: 'test-results/mobile.png', fullPage: true });
 });
+
+test('working villagers make a round trip and carry resources home', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/');
+  const route = page.locator('[data-session="demo-1"] .resource-route').first();
+  await expect(route).toBeVisible();
+  const samples = await route.evaluate((worker) => {
+    const animations = worker
+      .getAnimations({ subtree: true })
+      .filter((animation) =>
+        ['resource-route', 'route-outbound', 'route-harvest', 'route-return'].includes(
+          (animation as CSSAnimation).animationName,
+        ),
+      );
+    const sample = (progress: number) => {
+      for (const animation of animations) {
+        animation.pause();
+        const timing = animation.effect!.getTiming();
+        animation.currentTime = progress * Number(timing.duration) - Number(timing.delay);
+      }
+      return {
+        x: new DOMMatrixReadOnly(getComputedStyle(worker).transform).m41,
+        outward: getComputedStyle(worker.querySelector('.route-outbound')!).opacity,
+        harvest: getComputedStyle(worker.querySelector('.route-harvest')!).opacity,
+        carrying: getComputedStyle(worker.querySelector('.route-return')!).opacity,
+      };
+    };
+    return [sample(0.05), sample(0.45), sample(0.7), sample(0.95)];
+  });
+  expect(Math.abs(samples[0].x)).toBeLessThan(2);
+  expect(samples[0].outward).toBe('1');
+  expect(samples[1].x).toBeGreaterThan(65);
+  expect(samples[1].harvest).toBe('1');
+  expect(samples[2].x).toBeGreaterThan(10);
+  expect(samples[2].x).toBeLessThan(samples[1].x);
+  expect(samples[2].carrying).toBe('1');
+  expect(Math.abs(samples[3].x)).toBeLessThan(2);
+});

@@ -14,6 +14,7 @@ AgentEmpires turns local **Codex, Claude Code, GitHub Copilot CLI, and Oh My Pi*
 - A transparent, always-on-top desktop companion expands to the full map on double-click. The tray/menu-bar menu brings either view back.
 - Search, harness filters, active-only view, pan, zoom, activity bubbles, and a local chronicle.
 - Hover over a worker to see that individual agent's current activity. Demo mode and selection stay in sync between the map and companion.
+- Gathering, inspection, and planning work sends villagers from the hall to a farm or forest and back with supplies. Building work uses hammer poses; waiting and finished agents stay in place.
 - Construction grows with observed activity; it is decorative and **does not claim a percentage of task completion**.
 - Reveal the original journal in Finder/Explorer, or copy a resume command for your terminal.
 - Demo mode is clearly labeled and never mixed with live activity.

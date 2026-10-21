@@ -80,27 +80,58 @@ function Worker({
   name: string;
   activity: string;
 }) {
-  const gathering = /gather|read|search|explor/i.test(activity);
   const building = working && /build|edit|patch|writ/i.test(activity);
-  const primary = !working ? 0 : building ? 4 : gathering ? 6 + (index % 2) : 1;
-  const secondary = building ? 5 : 3;
+  const harvesting = working && !building;
+  // These are visible routes on the board: the front of the hall to the farm or forest.
+  // Each villager has a slightly different doorway and departure time, so several agents
+  // can move at once without occupying exactly the same point.
+  const doorways = [
+    [-12, 40],
+    [13, 42],
+    [0, 53],
+    [26, 48],
+    [-22, 53],
+    [7, 61],
+    [-9, 48],
+    [23, 59],
+  ];
+  const [originX, originY] = harvesting ? doorways[index] : [x, y];
+  const forestTrip = index % 2 === 1;
+  const [destinationX, destinationY] = forestTrip ? [-75, 13] : [72, 30];
+  const routeDuration = `${8.5 + (index % 3)}s`;
+  const routeDelay = `-${index * 1.9}s`;
+  const routeStyle = {
+    '--route-x': `${destinationX - originX}px`,
+    '--route-y': `${destinationY - originY}px`,
+    '--route-duration': routeDuration,
+    '--route-delay': routeDelay,
+    '--pose-delay': `-${index * 0.17}s`,
+  } as CSSProperties;
   return (
-    <g transform={`translate(${x} ${y})`}>
-      <g
-        className={`worker ${working && !building ? 'walking' : ''}`}
-        style={
-          {
-            animationDelay: `-${index * 1.7}s`,
-            animationDuration: `${7 + (index % 3)}s`,
-            '--pose-delay': `-${index * 0.17}s`,
-          } as CSSProperties
-        }
-      >
+    <g transform={`translate(${originX} ${originY})`}>
+      <g className={`worker ${harvesting ? 'resource-route' : ''}`} style={routeStyle}>
         <title>{`${name}: ${activity}`}</title>
         <ellipse cy="3" rx="7" ry="2.8" fill="#152819" opacity=".45" />
         <ellipse cy="3" rx="7" ry="2.8" fill="none" stroke={color} strokeWidth=".8" opacity=".8" />
-        <Pose frame={primary} className={working && !gathering ? 'pose-primary' : ''} />
-        {working && !gathering && <Pose frame={secondary} className="pose-secondary" />}
+        {harvesting ? (
+          <>
+            <g className={`route-outbound ${forestTrip ? 'face-left' : ''}`}>
+              <Pose frame={1} className="pose-primary" />
+              <Pose frame={3} className="pose-secondary" />
+            </g>
+            <g className="route-harvest">
+              <Pose frame={forestTrip ? 6 : 7} />
+            </g>
+            <g className={`route-return ${forestTrip ? '' : 'face-left'}`}>
+              <Pose frame={forestTrip ? 6 : 7} />
+            </g>
+          </>
+        ) : (
+          <>
+            <Pose frame={building ? 4 : 0} className={building ? 'pose-primary' : ''} />
+            {building && <Pose frame={5} className="pose-secondary" />}
+          </>
+        )}
         <rect className="worker-hit" x="-12" y="-32" width="24" height="38" fill="transparent" />
         {waiting && (
           <g pointerEvents="none">
