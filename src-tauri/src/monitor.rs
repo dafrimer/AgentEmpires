@@ -176,8 +176,16 @@ impl Monitor {
                     if let Some(parent_dir) = path.parent() {
                         let sibling = parent_dir.with_extension("jsonl");
                         if sibling.is_file() && sibling != path {
-                            session.parent_session =
-                                Some(format!("@path:{}", sibling.to_string_lossy()));
+                            let nested_parent = path
+                                .file_stem()
+                                .and_then(|s| s.to_str())
+                                .and_then(|s| s.rsplit_once('.'))
+                                .map(|(parent, _)| parent_dir.join(format!("{parent}.jsonl")))
+                                .filter(|p| p.is_file());
+                            session.parent_session = Some(format!(
+                                "@path:{}",
+                                nested_parent.unwrap_or(sibling).to_string_lossy()
+                            ));
                         }
                     }
                 }
@@ -474,5 +482,46 @@ mod tests {
             repository(&repo.to_string_lossy()).0,
             repository(&work.to_string_lossy()).0
         );
+        let key = repository(&repo.to_string_lossy()).0;
+        assert_eq!(
+            file_identity(&repo.to_string_lossy(), "src/app.rs", &key),
+            file_identity(&work.to_string_lossy(), "src/app.rs", &key)
+        );
+    }
+    #[test]
+    fn omp_nested_artifact_journals_become_workers_not_settlements() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path();
+        fs::create_dir(root.join("session")).unwrap();
+        let timestamp = chrono::Utc::now().to_rfc3339();
+        for (name, id) in [
+            ("session.jsonl", "lead"),
+            ("session/Builder.jsonl", "builder"),
+            ("session/Builder.Scout.jsonl", "scout"),
+        ] {
+            let header = serde_json::json!({"type":"session","id":id,"cwd":root.to_string_lossy(),"timestamp":timestamp});
+            let message = serde_json::json!({"type":"message","message":{"role":"user","content":"synthetic fixture"},"timestamp":timestamp});
+            fs::write(root.join(name), format!("{header}\n{message}\n")).unwrap();
+        }
+        let settings = Settings {
+            roots: BTreeMap::from([(Harness::Omp, root.to_string_lossy().into_owned())]),
+            history_hours: 24,
+        };
+        let mut monitor = Monitor::new();
+        let snapshot = monitor.scan(&settings);
+        assert_eq!(snapshot.sessions.len(), 1);
+        let session = &snapshot.sessions[0];
+        assert_eq!(session.agents.len(), 3);
+        assert_eq!(
+            session
+                .agents
+                .iter()
+                .find(|a| a.id == "omp:scout:root")
+                .unwrap()
+                .parent_id
+                .as_deref(),
+            Some("omp:builder:root")
+        );
+        assert_eq!(session.status, Status::Working);
     }
 }

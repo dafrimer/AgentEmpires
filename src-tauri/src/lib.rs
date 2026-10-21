@@ -117,15 +117,25 @@ fn switch_view(app: &tauri::AppHandle, compact: bool) -> Result<(), String> {
     Ok(())
 }
 pub fn run() {
+    let smoke_test = std::env::args().any(|arg| arg == "--smoke-test");
     tauri::Builder::default()
-        .setup(|app| {
-            let dir = app.path().app_config_dir()?;
+        .setup(move |app| {
+            let dir = if smoke_test {
+                std::env::temp_dir().join(format!("agentempires-smoke-{}", std::process::id()))
+            } else {
+                app.path().app_config_dir()?
+            };
             std::fs::create_dir_all(&dir)?;
             let path = dir.join("settings.json");
-            let settings = std::fs::read(&path)
+            let mut settings = std::fs::read(&path)
                 .ok()
                 .and_then(|s| serde_json::from_slice::<Settings>(&s).ok())
                 .unwrap_or_default();
+            if smoke_test {
+                for (harness, root) in &mut settings.roots {
+                    *root = dir.join(harness.key()).to_string_lossy().into_owned();
+                }
+            }
             let snapshot = Arc::new(Mutex::new(Snapshot {
                 scanning: true,
                 ..Default::default()
@@ -173,6 +183,37 @@ pub fn run() {
                     _ => {}
                 })
                 .build(app)?;
+            if smoke_test {
+                let handle = app.handle().clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_secs(2));
+                    let app = handle.clone();
+                    let _ = handle.run_on_main_thread(move || {
+                        let result = switch_view(&app, true).and_then(|_| {
+                            let main = app.get_webview_window("main").ok_or("Missing map")?;
+                            let buddy =
+                                app.get_webview_window("buddy").ok_or("Missing companion")?;
+                            if main.is_visible().map_err(|e| e.to_string())?
+                                || !buddy.is_visible().map_err(|e| e.to_string())?
+                            {
+                                return Err("Companion visibility failed".into());
+                            }
+                            switch_view(&app, false)?;
+                            if !main.is_visible().map_err(|e| e.to_string())?
+                                || buddy.is_visible().map_err(|e| e.to_string())?
+                            {
+                                return Err("Map visibility failed".into());
+                            }
+                            Ok(())
+                        });
+                        if let Err(error) = &result {
+                            eprintln!("Native smoke test: {error}");
+                        }
+                        let _ = std::fs::remove_dir_all(&dir);
+                        app.exit(if result.is_ok() { 0 } else { 1 });
+                    });
+                });
+            }
             Ok(())
         })
         .on_window_event(|window, event| {

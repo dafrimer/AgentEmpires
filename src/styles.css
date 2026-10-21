@@ -446,6 +446,9 @@ main {
   cursor: pointer;
   outline: none;
 }
+.tile-target[role='button']:focus-visible {
+  outline: none;
+}
 .tile-target:focus-visible .settlement > path:nth-of-type(3) {
   stroke: #fff3bb;
   stroke-width: 4;

@@ -58,6 +58,17 @@ jobs:
       - run: npm run tauri build -- --bundles ${{ matrix.bundles }}
         env:
           APPLE_SIGNING_IDENTITY: '-'
+      - name: Native window smoke test (macOS)
+        if: runner.os == 'macOS'
+        timeout-minutes: 2
+        run: ./src-tauri/target/release/agent-empires --smoke-test
+      - name: Native window smoke test (Windows)
+        if: runner.os == 'Windows'
+        timeout-minutes: 2
+        shell: pwsh
+        run: |
+          $appProcess = Start-Process -FilePath ./src-tauri/target/release/agent-empires.exe -ArgumentList '--smoke-test' -Wait -PassThru
+          if ($appProcess.ExitCode -ne 0) { throw "Native smoke test failed with exit code $($appProcess.ExitCode)" }
       - uses: actions/upload-artifact@v4
         with:
           name: AgentEmpires-${{ matrix.name }}

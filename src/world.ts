@@ -11,7 +11,7 @@ const directions = [
 const key = (p: Cell) => `${p.q},${p.r}`;
 export const distance = (a: Cell, b: Cell) =>
   (Math.abs(a.q - b.q) + Math.abs(a.r - b.r) + Math.abs(a.q + a.r - b.q - b.r)) / 2;
-export const point = ({ q, r }: Cell) => ({ x: 228 * (q + r / 2), y: 136 * r });
+export const point = ({ q, r }: Cell) => ({ x: 252 * (q + r / 2), y: 182 * r });
 export function sharedFiles(a: Session, b: Session) {
   return Object.keys(a.files).filter((p) => p in b.files);
 }
@@ -43,17 +43,20 @@ export function arrange(sessions: Session[], previous: Map<string, Cell> = new M
         const c = { q: p.q + d.q, r: p.r + d.r };
         if (!used.has(key(c))) candidates.set(key(c), c);
       }
-    const cost = (c: Cell) => {
-      let score = distance(c, { q: 0, r: 0 }) * 0.2;
-      for (const other of sessions) {
-        const p = result.get(other.id);
-        if (p) score += affinity(s, other) * distance(c, p);
-      }
-      return score;
-    };
-    const best = [...candidates.values()].sort(
-      (a, b) => cost(a) - cost(b) || a.r - b.r || a.q - b.q,
-    )[0];
+    // Score related neighbors once, rather than comparing the entire world
+    // on every sort comparison. This keeps large session lists responsive.
+    const anchors = sessions
+      .filter((other) => result.has(other.id))
+      .map((other) => ({ cell: result.get(other.id)!, weight: affinity(s, other) }))
+      .filter((anchor) => anchor.weight > 0)
+      .sort((a, b) => b.weight - a.weight)
+      .slice(0, 8);
+    const cost = (c: Cell) =>
+      distance(c, { q: 0, r: 0 }) * 0.2 +
+      anchors.reduce((score, anchor) => score + anchor.weight * distance(c, anchor.cell), 0);
+    const best = [...candidates.values()]
+      .map((cell) => ({ cell, cost: cost(cell) }))
+      .sort((a, b) => a.cost - b.cost || a.cell.r - b.cell.r || a.cell.q - b.cell.q)[0].cell;
     result.set(s.id, best);
     used.add(key(best));
   }

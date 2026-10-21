@@ -85,6 +85,8 @@ npm run test:ui
 cargo test --locked --manifest-path src-tauri/Cargo.toml
 ```
 
+`cargo run --manifest-path src-tauri/Cargo.toml --example inspect` prints a read-only seven-day discovery summary (counts only). The built desktop executable's `--smoke-test` option opens both native windows, checks switching, and exits; it uses isolated temporary settings and no real journal roots.
+
 The core is Rust; the interface is React, TypeScript, and original SVG artwork inside Tauri 2. See [architecture](docs/ARCHITECTURE.md) and [contributing](CONTRIBUTING.md).
 
 ## License and artwork
