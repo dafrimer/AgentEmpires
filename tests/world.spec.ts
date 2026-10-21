@@ -8,7 +8,7 @@ test('world, selection, filters, companion and connection settings', async ({ pa
   ).toBeVisible();
   await expect(page.locator('[data-session]')).toHaveCount(6);
   const worker = page.locator('[data-session="demo-0"] .worker').first();
-  await worker.locator(':scope > circle').hover();
+  await worker.locator('.worker-hit').hover();
   await expect(worker.locator('.worker-speech')).toBeVisible();
   await expect(worker.locator('.worker-speech')).toContainText('Building the settlement');
   await page.mouse.move(5, 5);

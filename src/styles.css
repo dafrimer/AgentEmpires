@@ -1148,7 +1148,7 @@ footer button {
 }
 .companion-bubble {
   position: absolute;
-  top: 52px;
+  top: 42px;
   left: 35px;
   right: 35px;
   z-index: 2;
@@ -1234,7 +1234,7 @@ html:has(.companion),
 }
 .flag {
   animation: flag 3s ease-in-out infinite;
-  transform-origin: -4px -66px;
+  transform-origin: 0 -20px;
 }
 .paused * {
   animation-play-state: paused !important;
@@ -1493,5 +1493,44 @@ html:has(.companion),
   }
   .world-svg {
     min-height: 0;
+  }
+}
+
+/* Frame changes animate the raster poses without timers or renderer state updates. */
+.pose-primary {
+  animation: pose-primary 0.9s steps(1, end) infinite;
+  animation-delay: var(--pose-delay, 0s);
+}
+.pose-secondary {
+  opacity: 0;
+  animation: pose-secondary 0.9s steps(1, end) infinite;
+  animation-delay: var(--pose-delay, 0s);
+}
+@keyframes pose-primary {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes pose-secondary {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pose-primary {
+    animation: none;
+    opacity: 1;
+  }
+  .pose-secondary {
+    animation: none;
+    opacity: 0;
   }
 }

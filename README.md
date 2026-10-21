@@ -88,8 +88,8 @@ cargo test --locked --manifest-path src-tauri/Cargo.toml
 
 `cargo run --manifest-path src-tauri/Cargo.toml --example inspect` prints a read-only seven-day discovery summary (counts only). The built desktop executable's `--smoke-test` option opens both native windows, checks switching, and exits; it uses isolated temporary settings and no real journal roots.
 
-The core is Rust; the interface is React, TypeScript, and original SVG artwork inside Tauri 2. See [architecture](docs/ARCHITECTURE.md) and [contributing](CONTRIBUTING.md).
+The core is Rust; the interface is React, TypeScript, and original isometric raster sprites layered in SVG inside Tauri 2. See [architecture](docs/ARCHITECTURE.md) and [contributing](CONTRIBUTING.md).
 
 ## License and artwork
 
-MIT. All settlement illustrations and interface artwork in this repository are original vector drawings. The hex-board and historical strategy-game inspirations are conceptual; no Catan or Age of Empires assets are included. AgentEmpires is an independent project, unaffiliated with the harness vendors or those games.
+MIT. Settlements use original generated isometric sprites, textured terrain, and animated villager poses inspired by classic medieval strategy games. See the [asset notes and generation prompts](public/art/README.md). No Catan or Age of Empires assets are included. AgentEmpires is an independent project, unaffiliated with the harness vendors or those games.
