@@ -7,12 +7,26 @@ AgentEmpires uses original generated raster artwork inspired by classic medieval
 - `environment.png`: 1254 × 1254 RGBA; town center, cottage, pines, wheat farm. Source regions are defined in `src/Settlement.tsx`.
 - `villagers.png`: 1536 × 1024 RGBA; four columns and two rows of villager poses. Background RGB values may remain under transparent alpha; always preserve the alpha channel.
 - `meadow.png`: 1254 × 1254 grass texture, clipped into each hex tile at runtime.
+- `tool-workbench.png`: 1254 × 1254 RGBA; four related poses of a villager working at a map and instrument table.
 
 The originals are preserved without destructive cropping. The renderer uses atlas view boxes, a colored selection ring per villager, harness borders and banners, two-pose hammer/walk cycles, and carrying poses for gathering. Pause and reduced-motion preferences apply to animation. The small pose set is an initial art pass, not a full directional animation library. Buildings grow decoratively with event counts; workers still correspond to observed agents.
 
 Planning and reading follow a repeated, staggered round trip from the hall to the farm or forest. The outbound trip uses alternating walking frames, the villager pauses at the resource, and the return shows a basket or timber bundle. Editing, shell commands, and tests use the hammer poses. This is a visual metaphor for work observed in a local CLI journal; the route does not reveal private prompt content.
 
+Unclassified observed tool calls use the workbench poses, cycled in place. The four-frame animation pauses with the map and presents its first frame when reduced motion is requested.
+
 ## Generation prompts
+
+### Tool workbench
+
+```text
+Use case: stylized-concept
+Asset type: production 2D isometric character animation atlas for AgentEmpires desktop strategy-game map.
+Primary request: a distinct third activity for a coding agent using a generic tool. Original medieval strategy game art matching the realistic, detailed pre-rendered 2D isometric proportions and surface treatment of classic Age of Empires II. One villager in cream linen shirt, brown vest, green cloth sash, wool trousers, worn boots, studying and operating a compact wooden field workbench with open parchment map, brass compass, and a few instruments. The worker and table must be a single integrated sprite in each frame, not separate unrelated objects.
+Composition: 1024x1024 square canvas with a precise 2x2 grid of four 512x512 independent cells. Top left: pose A villager studying map with one hand on parchment. Top right: same villager at same table, same scale and ground position, reaching to turn brass compass or adjust an instrument. Bottom left: pose A repeated but looking down and marking the map with quill. Bottom right: pose B repeated, moving a marker across map. All four cells show the SAME character and SAME workbench, camera angle, composition, lighting, and scale; only arm and head movement changes. Each whole sprite centered horizontally, contact point at local y=455, no crossing cell edges, at least 25px empty alpha margin. Character roughly 290px tall, workbench about hip height. Isometric orthographic 30-degree view, lit upper left.
+Textures: weathered timber, parchment fibers, brass glint, natural fabric, subtle shadows. Earthy palette bright enough on dark forest interface. Detailed anatomy, no exaggerated face or thick outline. Genuine transparent background, completely alpha-clear between objects and cells. No ground platform, no writing or legible text, no labels, no grid lines, no watermark, no building, no extra people.
+```
+
 
 ### Environment
 

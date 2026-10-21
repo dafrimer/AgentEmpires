@@ -172,3 +172,29 @@ test('working villagers make a round trip and carry resources home', async ({ pa
   expect(samples[2].carrying).toBe('1');
   expect(Math.abs(samples[3].x)).toBeLessThan(2);
 });
+
+test('other tool calls use a separate animated workbench', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/');
+  const worker = page.locator('[data-session="demo-4"] .tool-action');
+  await expect(worker).toHaveCount(1);
+  await expect(worker.locator('.tool-frame')).toHaveCount(4);
+  await expect(worker).not.toHaveClass(/resource-route/);
+  const visibleFrames = await worker.evaluate((element) => {
+    const frames = [...element.querySelectorAll<SVGElement>('.tool-frame')];
+    const animations = frames.map((frame) => frame.getAnimations()[0]);
+    return [400, 1200, 2000, 2800].map((time) => {
+      for (const animation of animations) {
+        animation.pause();
+        animation.currentTime = time;
+      }
+      return frames.map((frame) => getComputedStyle(frame).opacity);
+    });
+  });
+  expect(visibleFrames).toEqual([
+    ['1', '0', '0', '0'],
+    ['0', '1', '0', '0'],
+    ['0', '0', '1', '0'],
+    ['0', '0', '0', '1'],
+  ]);
+});

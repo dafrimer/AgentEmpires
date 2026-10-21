@@ -68,7 +68,9 @@ fn classify(name: &str, args: &Value) -> (&'static str, &'static str) {
         }
         return ("working", "Working at the workshop");
     }
-    ("thinking", "Planning the next move")
+    // An observed function call is distinct from the journal's thinking events,
+    // even when this particular tool has no more specific visual category.
+    ("tool", "Using a tool")
 }
 fn tool(session: &mut Session, name: &str, args: &Value, agent: Option<&str>, at: i64) {
     let args = json_args(args);
@@ -559,5 +561,20 @@ mod tests {
         assert!(!serde_json::to_string(&out)
             .unwrap()
             .contains("secret-token"));
+    }
+    #[test]
+    fn unfamiliar_tool_calls_are_distinct_from_planning() {
+        let mut out = Session::new(Harness::Codex, "rollout.jsonl");
+        event(
+            &mut out,
+            json!({"type":"event_msg","payload":{"type":"task_started"}}),
+        );
+        assert_eq!(out.timeline.last().unwrap().kind, "thinking");
+        event(
+            &mut out,
+            json!({"type":"response_item","payload":{"type":"function_call","name":"browser.open","arguments":"{}"}}),
+        );
+        assert_eq!(out.timeline.last().unwrap().kind, "tool");
+        assert_eq!(out.activity, "Using a tool · browser.open");
     }
 }

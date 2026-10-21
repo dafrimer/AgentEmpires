@@ -6,6 +6,7 @@ import { HARNESSES } from './types';
 const HEX = 'M0-79 110-39 110 39 0 79-110 39-110-39Z';
 const ENVIRONMENT = '/art/environment.png';
 const VILLAGERS = '/art/villagers.png';
+const TOOL_WORKBENCH = '/art/tool-workbench.png';
 // Explicit atlas regions preserve transparent margins without preprocessing the source art.
 const REGIONS = {
   hall: [0, 0, 655, 610],
@@ -61,6 +62,24 @@ function Pose({ frame, className = '' }: { frame: number; className?: string }) 
   );
 }
 
+function ToolPose({ frame }: { frame: number }) {
+  return (
+    <svg
+      className={`tool-frame tool-frame-${frame}`}
+      x="-28"
+      y="-51"
+      width="56"
+      height="56"
+      viewBox={`${(frame % 2) * 627} ${Math.floor(frame / 2) * 627} 627 627`}
+      overflow="hidden"
+      pointerEvents="none"
+      aria-hidden="true"
+    >
+      <image href={TOOL_WORKBENCH} width="1254" height="1254" />
+    </svg>
+  );
+}
+
 function Worker({
   x,
   y,
@@ -82,12 +101,16 @@ function Worker({
 }) {
   // Shell and test execution also count as construction on the board. The
   // activity bubble keeps the more precise label from the journal adapter.
+  const toolUse =
+    working &&
+    (activity.startsWith('Using a tool ·') || activity.startsWith('Rallying the workers'));
   const building =
     working &&
+    !toolUse &&
     /build|edit|patch|writ|inspect|test|bash|shell|exec|powershell|workshop|terminal/i.test(
       activity,
     );
-  const harvesting = working && !building;
+  const harvesting = working && !building && !toolUse;
   // These are visible routes on the board: the front of the hall to the farm or forest.
   // Each villager has a slightly different doorway and departure time, so several agents
   // can move at once without occupying exactly the same point.
@@ -115,11 +138,28 @@ function Worker({
   } as CSSProperties;
   return (
     <g transform={`translate(${originX} ${originY})`}>
-      <g className={`worker ${harvesting ? 'resource-route' : ''}`} style={routeStyle}>
+      <g
+        className={`worker ${harvesting ? 'resource-route' : ''} ${toolUse ? 'tool-action' : ''}`}
+        style={routeStyle}
+      >
         <title>{`${name}: ${activity}`}</title>
-        <ellipse cy="3" rx="7" ry="2.8" fill="#152819" opacity=".45" />
-        <ellipse cy="3" rx="7" ry="2.8" fill="none" stroke={color} strokeWidth=".8" opacity=".8" />
-        {harvesting ? (
+        <ellipse cy="3" rx={toolUse ? 22 : 7} ry={toolUse ? 5 : 2.8} fill="#152819" opacity=".45" />
+        <ellipse
+          cy="3"
+          rx={toolUse ? 22 : 7}
+          ry={toolUse ? 5 : 2.8}
+          fill="none"
+          stroke={color}
+          strokeWidth=".8"
+          opacity=".8"
+        />
+        {toolUse ? (
+          <>
+            {[0, 1, 2, 3].map((frame) => (
+              <ToolPose key={frame} frame={frame} />
+            ))}
+          </>
+        ) : harvesting ? (
           <>
             <g className={`route-outbound ${forestTrip ? 'face-left' : ''}`}>
               <Pose frame={1} className="pose-primary" />
@@ -138,7 +178,14 @@ function Worker({
             {building && <Pose frame={5} className="pose-secondary" />}
           </>
         )}
-        <rect className="worker-hit" x="-12" y="-32" width="24" height="38" fill="transparent" />
+        <rect
+          className="worker-hit"
+          x={toolUse ? -28 : -12}
+          y={toolUse ? -51 : -32}
+          width={toolUse ? 56 : 24}
+          height={toolUse ? 57 : 38}
+          fill="transparent"
+        />
         {waiting && (
           <g pointerEvents="none">
             <circle cy="-39" r="7" fill="#edc77e" stroke="#5a4828" />

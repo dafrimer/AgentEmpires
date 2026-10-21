@@ -20,7 +20,7 @@ const definitions: [string, Harness, string, Status, string, string, number][] =
     2,
   ],
   ['Northern passage', 'copilot', 'atlas', 'waiting', 'Awaiting your guidance', 'waiting', 3],
-  ['The great library', 'claude', 'docs', 'working', 'Gathering knowledge · Grep', 'gathering', 2],
+  ['The great library', 'claude', 'docs', 'working', 'Gathering knowledge · Grep', 'gathering', 3],
   [
     'The quiet workshop',
     'codex',
@@ -39,7 +39,12 @@ export function demoSnapshot(tick = 0): Snapshot {
       const agents = Array.from({ length: count }, (_, j) => ({
         id: j === 0 ? 'root' : `worker-${j}`,
         parentId: j === 0 ? null : j === 3 ? 'worker-1' : 'root',
-        name: j === 0 ? 'Lead agent' : ['', 'Builder', 'Scout', 'Engineer'][j],
+        name:
+          j === 0
+            ? 'Lead agent'
+            : j === 2 && i === 4
+              ? 'Researcher'
+              : ['', 'Builder', 'Scout', 'Engineer'][j],
         status:
           j === 0
             ? status
@@ -49,9 +54,11 @@ export function demoSnapshot(tick = 0): Snapshot {
         activity:
           j === 0
             ? activity
-            : j % 2
-              ? 'Building the settlement · edit'
-              : 'Gathering knowledge · read',
+            : j === 2 && i === 4
+              ? 'Using a tool · browser.open'
+              : j % 2
+                ? 'Building the settlement · edit'
+                : 'Gathering knowledge · read',
         updatedAt: at,
       }));
       return {
@@ -77,8 +84,8 @@ export function demoSnapshot(tick = 0): Snapshot {
           {
             at: at - 32000,
             agentId: agents.at(-1)!.id,
-            text: 'Gathering knowledge · read',
-            kind: 'gathering',
+            text: agents.at(-1)!.activity,
+            kind: i === 4 ? 'tool' : 'gathering',
           },
           { at, agentId: 'root', text: activity, kind },
         ],

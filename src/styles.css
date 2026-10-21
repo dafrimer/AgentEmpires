@@ -1245,6 +1245,22 @@ html:has(.companion),
 .face-left {
   transform: scaleX(-1);
 }
+.tool-frame {
+  opacity: 0;
+  animation: tool-frame-cycle 3.2s steps(1, end) infinite;
+}
+.tool-frame-0 {
+  opacity: 1;
+}
+.tool-frame-1 {
+  animation-delay: 0.8s;
+}
+.tool-frame-2 {
+  animation-delay: 1.6s;
+}
+.tool-frame-3 {
+  animation-delay: 2.4s;
+}
 .worker-speech {
   display: none;
 }
@@ -1322,6 +1338,16 @@ html:has(.companion),
     transform: translateY(-1px);
   }
 }
+@keyframes tool-frame-cycle {
+  0%,
+  24.99% {
+    opacity: 1;
+  }
+  25%,
+  100% {
+    opacity: 0;
+  }
+}
 @keyframes work-tool {
   0%,
   50%,
@@ -1360,6 +1386,14 @@ html:has(.companion),
   }
   .route-harvest,
   .route-return {
+    opacity: 0;
+  }
+  .tool-frame-0 {
+    opacity: 1;
+  }
+  .tool-frame-1,
+  .tool-frame-2,
+  .tool-frame-3 {
     opacity: 0;
   }
 }
