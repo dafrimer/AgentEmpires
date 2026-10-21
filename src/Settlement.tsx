@@ -80,7 +80,13 @@ function Worker({
   name: string;
   activity: string;
 }) {
-  const building = working && /build|edit|patch|writ/i.test(activity);
+  // Shell and test execution also count as construction on the board. The
+  // activity bubble keeps the more precise label from the journal adapter.
+  const building =
+    working &&
+    /build|edit|patch|writ|inspect|test|bash|shell|exec|powershell|workshop|terminal/i.test(
+      activity,
+    );
   const harvesting = working && !building;
   // These are visible routes on the board: the front of the hall to the farm or forest.
   // Each villager has a slightly different doorway and departure time, so several agents

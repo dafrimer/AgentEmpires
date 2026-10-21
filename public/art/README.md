@@ -10,7 +10,7 @@ AgentEmpires uses original generated raster artwork inspired by classic medieval
 
 The originals are preserved without destructive cropping. The renderer uses atlas view boxes, a colored selection ring per villager, harness borders and banners, two-pose hammer/walk cycles, and carrying poses for gathering. Pause and reduced-motion preferences apply to animation. The small pose set is an initial art pass, not a full directional animation library. Buildings grow decoratively with event counts; workers still correspond to observed agents.
 
-Non-building work follows a repeated, staggered round trip from the hall to the farm or forest. The outbound trip uses alternating walking frames, the villager pauses at the resource, and the return shows a basket or timber bundle. This is a visual metaphor for work observed in a local CLI journal; the route does not reveal private prompt content.
+Planning and reading follow a repeated, staggered round trip from the hall to the farm or forest. The outbound trip uses alternating walking frames, the villager pauses at the resource, and the return shows a basket or timber bundle. Editing, shell commands, and tests use the hammer poses. This is a visual metaphor for work observed in a local CLI journal; the route does not reveal private prompt content.
 
 ## Generation prompts
 

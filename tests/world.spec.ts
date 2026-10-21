@@ -67,7 +67,7 @@ test('desktop IPC uses live data, saves roots, and reveals only a selected sessi
                 repoName: 'repo',
                 sourcePath: '/test/sessions/fixture.jsonl',
                 status: 'working',
-                activity: 'Building the settlement · apply_patch',
+                activity: 'Working at the workshop · exec_command',
                 lastActivity: Date.now(),
                 eventCount: 5,
                 agents: [
@@ -76,7 +76,7 @@ test('desktop IPC uses live data, saves roots, and reveals only a selected sessi
                     parentId: null,
                     name: 'Lead agent',
                     status: 'working',
-                    activity: 'Building the settlement',
+                    activity: 'Working at the workshop · exec_command',
                     updatedAt: Date.now(),
                   },
                 ],
@@ -105,6 +105,10 @@ test('desktop IPC uses live data, saves roots, and reveals only a selected sessi
   await page.goto('/');
   await expect(page.locator('.demo-banner')).toHaveCount(0);
   await expect(page.locator('.settlement-heading h2')).toHaveText('Native fixture');
+  await expect(page.locator('[data-session="codex:fixture"] .worker .pose-secondary')).toHaveCount(
+    1,
+  );
+  await expect(page.locator('[data-session="codex:fixture"] .resource-route')).toHaveCount(0);
   await page.getByRole('button', { name: 'Reveal source journal' }).click();
   await page.getByRole('button', { name: 'Connections and settings' }).click();
   await page.getByRole('textbox', { name: 'Oh My Pi journal directory' }).fill('/custom/omp');
@@ -131,7 +135,10 @@ test('narrow viewport stays usable without horizontal overflow', async ({ page }
 test('working villagers make a round trip and carry resources home', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.goto('/');
-  const route = page.locator('[data-session="demo-1"] .resource-route').first();
+  const executing = page.locator('[data-session="demo-1"] .worker').first();
+  await expect(executing.locator('.pose-secondary')).toHaveCount(1);
+  await expect(executing).not.toHaveClass(/resource-route/);
+  const route = page.locator('[data-session="demo-2"] .resource-route').first();
   await expect(route).toBeVisible();
   const samples = await route.evaluate((worker) => {
     const animations = worker
