@@ -102,12 +102,11 @@ function Worker({
   // Shell and test execution also count as construction on the board. The
   // activity bubble keeps the more precise label from the journal adapter.
   const toolUse =
-    working &&
-    (activity.startsWith('Using a tool ·') || activity.startsWith('Rallying the workers'));
+    working && (activity.startsWith('Using a tool ·') || activity.startsWith('Delegating work'));
   const building =
     working &&
     !toolUse &&
-    /build|edit|patch|writ|inspect|test|bash|shell|exec|powershell|workshop|terminal/i.test(
+    /build|edit|patch|writ|inspect|test|command|bash|shell|exec|powershell|workshop|terminal/i.test(
       activity,
     );
   const harvesting = working && !building && !toolUse;
@@ -325,17 +324,17 @@ export default function Settlement({
       {!compact && (
         <g transform="translate(0 112)">
           <rect
-            x="-72"
+            x="-94"
             y="-12"
-            width="144"
+            width="188"
             height="25"
             rx="4"
             fill="#172e25"
             stroke={selected ? '#c4b47c' : '#526b52'}
           />
-          <circle cx="-57" r="3" fill={h.color} />
+          <circle cx="-79" r="3" fill={h.color} />
           <text x="4" y="4" textAnchor="middle" fontSize="10" letterSpacing="1" fill="#e2e4d0">
-            {session.repoName.toUpperCase().slice(0, 20)}
+            {session.title.toUpperCase().slice(0, 27)}
           </text>
         </g>
       )}

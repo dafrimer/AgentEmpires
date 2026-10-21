@@ -5,6 +5,15 @@ import { arrange, point, affinity, sharedFiles } from './world';
 import type { Cell } from './world';
 import Settlement from './Settlement';
 
+function bubbleLabel(text: string): string {
+  if (text.length <= 34) return text;
+  const words = text
+    .slice(0, 34)
+    .replace(/\s+\S*$/, '')
+    .trim();
+  return `${words || text.slice(0, 33)}…`;
+}
+
 export default function WorldMap({
   sessions,
   selected,
@@ -161,11 +170,22 @@ export default function WorldMap({
                     <Settlement session={s} selected={selected === s.id} />
                     {(hovered === s.id || selected === s.id) && (
                       <g className="map-bubble" transform="translate(0 -121)">
-                        <rect x="-116" y="-22" width="232" height="29" rx="7" />
+                        <rect
+                          x="-116"
+                          y={s.task ? -36 : -22}
+                          width="232"
+                          height={s.task ? 43 : 29}
+                          rx="7"
+                        />
                         <path d="m-5 7 5 6 5-6" />
-                        <text textAnchor="middle" y="-4">
-                          {s.activity.split(' · ')[0].slice(0, 34)}
+                        <text textAnchor="middle" y={s.task ? -19 : -4}>
+                          {bubbleLabel(s.task ?? s.activity.split(' · ')[0])}
                         </text>
+                        {s.task && (
+                          <text className="bubble-action" textAnchor="middle" y="-4">
+                            {bubbleLabel(s.activity.split(' · ')[0])}
+                          </text>
+                        )}
                       </g>
                     )}
                   </g>

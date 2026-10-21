@@ -62,6 +62,7 @@ pub struct Session {
     pub raw_id: String,
     pub harness: Harness,
     pub title: String,
+    pub task: Option<String>,
     pub cwd: String,
     pub repo_key: String,
     pub repo_name: String,
@@ -77,6 +78,8 @@ pub struct Session {
     pub parent_session: Option<String>,
     #[serde(skip)]
     pub excluded: bool,
+    #[serde(skip)]
+    title_is_set: bool,
 }
 impl Session {
     pub fn new(harness: Harness, path: &str) -> Self {
@@ -85,6 +88,7 @@ impl Session {
             raw_id: String::new(),
             harness,
             title: format!("{} settlement", harness.label()),
+            task: None,
             cwd: String::new(),
             repo_key: String::new(),
             repo_name: "Uncharted".into(),
@@ -98,12 +102,35 @@ impl Session {
             timeline: vec![],
             parent_session: None,
             excluded: false,
+            title_is_set: false,
         }
     }
     pub fn identify(&mut self, id: &str) {
         if !id.is_empty() {
             self.raw_id = id.into();
             self.id = format!("{}:{}", self.harness.key(), id);
+        }
+    }
+    pub fn set_title(&mut self, text: &str) {
+        let title: String = text
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ")
+            .chars()
+            .take(80)
+            .collect();
+        if !title.is_empty() {
+            self.title = title;
+            self.title_is_set = true;
+        }
+    }
+    pub fn observe_user_text(&mut self, text: &str) {
+        if let Some(task) = short_task(text, 96) {
+            if !self.title_is_set {
+                self.title = short_task(&task, 80).unwrap_or_else(|| task.clone());
+                self.title_is_set = true;
+            }
+            self.task = Some(task);
         }
     }
     pub fn record(
@@ -161,6 +188,61 @@ impl Session {
             self.timeline.remove(0);
         }
     }
+}
+
+// User-authored requests become short local labels. A short request can fit in full.
+fn short_task(input: &str, limit: usize) -> Option<String> {
+    let request = input.rsplit("## My request:").next().unwrap_or(input);
+    for line in request.lines().take(80) {
+        let line = line.trim().trim_start_matches(['-', '*', '#', ' ']).trim();
+        if line.is_empty()
+            || line.starts_with('<')
+            || line.starts_with('`')
+            || line.starts_with('{')
+        {
+            continue;
+        }
+        let lower = line.to_ascii_lowercase();
+        if [
+            "password",
+            "secret",
+            "api_key",
+            "apikey",
+            "token=",
+            "bearer ",
+            "private key",
+            "http://",
+            "https://",
+        ]
+        .iter()
+        .any(|s| lower.contains(s))
+            || line.split_whitespace().any(|w| w.len() > 80)
+        {
+            continue;
+        }
+        let line = line
+            .trim_start_matches("Can you ")
+            .trim_start_matches("Please ")
+            .trim_start_matches("please ")
+            .trim_start_matches("Let's ")
+            .trim_start_matches("lets ");
+        let sentence = line.split(['\n', '\r']).next().unwrap_or(line);
+        let collapsed = sentence.split_whitespace().collect::<Vec<_>>().join(" ");
+        let mut result: String = collapsed.chars().take(limit).collect();
+        if collapsed.chars().count() > limit {
+            if let Some(end) = result.rfind(' ') {
+                result.truncate(end);
+            }
+            result.push('…');
+        }
+        let result = result
+            .trim_end_matches(['.', '!', '?', ',', ':', ';', ' '])
+            .trim();
+        if result.chars().count() >= 5 && result.chars().any(char::is_alphabetic) {
+            return Some(result.into());
+        }
+    }
+    None
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

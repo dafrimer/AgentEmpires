@@ -14,6 +14,7 @@ export type Session = {
   rawId: string;
   harness: Harness;
   title: string;
+  task?: string | null;
   cwd: string;
   repoKey: string;
   repoName: string;

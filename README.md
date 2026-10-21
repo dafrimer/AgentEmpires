@@ -2,7 +2,7 @@
 
 **Your agents, alive.** A quiet desktop world for the coding agents working on your machine.
 
-AgentEmpires turns local **Codex, Claude Code, GitHub Copilot CLI, and Oh My Pi** sessions into medieval settlements on a hex map. Each real agent becomes a settler. Reading and planning gather supplies; editing and command execution build the village; other tool calls use an instrumented workbench. Test activity keeps its "Inspecting the defenses" label while the villager works at a building.
+AgentEmpires turns local **Codex, Claude Code, GitHub Copilot CLI, and Oh My Pi** sessions into medieval settlements on a hex map. Each real agent becomes a settler. Reading and planning gather supplies; editing and command execution build the village; other tool calls use an instrumented workbench. Settlement labels use an explicit session title when the journal provides one, or a short label inferred from the first user request. The current request and observed action appear in the map and detail panel.
 
 ![AgentEmpires demo world](docs/world.png)
 
@@ -76,7 +76,7 @@ Journals are private harness implementation formats and may change. Some tools b
 
 ## Privacy
 
-No accounts, hosted backend, telemetry, model API calls, or network requests in the application. Session data stays in memory. Prompts, reasoning, tool results, and command arguments are not sent to the renderer; descriptions are generated locally from tool names. Explicit session titles, repository names, local paths, and observed filenames can still be sensitive and appear locally in the UI. App settings are the only data saved by the backend. No harness settings or journals are modified.
+No accounts, hosted backend, telemetry, model API calls, or network requests in the application. Session data stays in memory. Short, bounded excerpts extracted locally from user requests are sent to the renderer to show the session name and current task; a short request may fit entirely in its label. Reasoning, tool results, and command arguments are not sent. Observed-action descriptions come from tool names and optional filenames, never command output. Titles, task labels, repository names, local paths, and observed filenames can still be sensitive and appear locally in the UI. App settings are the only data saved by the backend. No harness settings or journals are modified.
 
 ## Development
 

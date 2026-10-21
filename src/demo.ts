@@ -1,26 +1,26 @@
 import type { Harness, Session, Status, Snapshot } from './types';
 const definitions: [string, Harness, string, Status, string, string, number][] = [
-  [
-    'Cartographer',
-    'codex',
-    'atlas',
-    'working',
-    'Building the settlement · apply_patch',
-    'building',
-    4,
-  ],
-  ['The watchtower', 'claude', 'atlas', 'working', 'Inspecting the defenses · Bash', 'testing', 3],
+  ['Cartographer', 'codex', 'atlas', 'working', 'Editing routes.ts · apply_patch', 'building', 4],
+  ['The watchtower', 'claude', 'atlas', 'working', 'Running tests · Bash', 'testing', 3],
   [
     'A new trading post',
     'omp',
     'marketplace',
     'working',
-    'Gathering knowledge · read',
+    'Reading README.md · read',
     'gathering',
     2,
   ],
   ['Northern passage', 'copilot', 'atlas', 'waiting', 'Awaiting your guidance', 'waiting', 3],
-  ['The great library', 'claude', 'docs', 'working', 'Gathering knowledge · Grep', 'gathering', 3],
+  [
+    'The great library',
+    'claude',
+    'docs',
+    'working',
+    'Reading or searching files · Grep',
+    'gathering',
+    3,
+  ],
   [
     'The quiet workshop',
     'codex',
@@ -57,8 +57,8 @@ export function demoSnapshot(tick = 0): Snapshot {
             : j === 2 && i === 4
               ? 'Using a tool · browser.open'
               : j % 2
-                ? 'Building the settlement · edit'
-                : 'Gathering knowledge · read',
+                ? 'Editing project files · edit'
+                : 'Reading project files · read',
         updatedAt: at,
       }));
       return {
@@ -66,6 +66,14 @@ export function demoSnapshot(tick = 0): Snapshot {
         rawId: `sample-${i}`,
         harness,
         title,
+        task: [
+          'Map the Atlas routes and fix the broken navigation',
+          'Inspect the Atlas defenses and run the test suite',
+          'Research inventory options for the trading post',
+          'Plan the northern passage between Atlas regions',
+          'Find and organize the project documentation',
+          'Review the marketplace build before the next turn',
+        ][i],
         cwd: `/demo/${repo}`,
         repoKey: repo,
         repoName: repo,

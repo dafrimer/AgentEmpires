@@ -115,7 +115,7 @@ export default function App() {
     (s) =>
       (!filter || s.harness === filter) &&
       (!activeOnly || s.agents.some((a) => a.status === 'working' || a.status === 'waiting')) &&
-      `${s.title} ${s.repoName}`.toLowerCase().includes(query.toLowerCase()),
+      `${s.title} ${s.task ?? ''} ${s.repoName}`.toLowerCase().includes(query.toLowerCase()),
   );
   const current = sessions.find((s) => s.id === selected) ?? sessions[0];
   const workers = snapshot.sessions.reduce((n, s) => n + s.agents.length, 0);
@@ -173,7 +173,9 @@ export default function App() {
           >
             <Layers size={14} />
           </button>
-          <span>{demo ? 'DEMO WORLD' : 'YOUR LITTLE EMPIRE'}</span>
+          <span title={current?.title}>
+            {current?.title ?? (demo ? 'DEMO WORLD' : 'YOUR LITTLE EMPIRE')}
+          </span>
           <button aria-label="Expand world" onClick={() => void toggleView(false)}>
             <Maximize2 size={14} />
           </button>
@@ -181,9 +183,9 @@ export default function App() {
         {current ? (
           <>
             <div className="companion-bubble">
-              {current.activity.split(' · ')[0]}
+              {current.task ?? current.activity.split(' · ')[0]}
               <span>
-                {current.repoName} · {current.agents.length} settlers
+                {current.activity.split(' · ')[0]} · {current.agents.length} settlers
               </span>
             </div>
             <svg viewBox="-140 -125 280 260" className="companion-world">
@@ -383,8 +385,13 @@ export default function App() {
                   <Radio size={12} /> Last observed {age(current.lastActivity)}
                 </p>
                 <div className="activity-callout">
-                  <span className="eyebrow">AT THE SETTLEMENT</span>
-                  <p>{current.activity.split(' · ')[0]}</p>
+                  <span className="eyebrow">
+                    {current.task ? 'CURRENT TASK' : 'AT THE SETTLEMENT'}
+                  </span>
+                  <p>{current.task ?? current.activity.split(' · ')[0]}</p>
+                  {current.task && (
+                    <span className="observed-action">{current.activity.split(' · ')[0]}</span>
+                  )}
                   {current.activity.includes(' · ') && (
                     <code>{current.activity.split(' · ').slice(1).join(' · ')}</code>
                   )}

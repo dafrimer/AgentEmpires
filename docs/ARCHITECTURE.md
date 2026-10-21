@@ -23,6 +23,8 @@ The Rust monitor owns file access. The frontend can request a snapshot, edit the
 
 The serialized snapshot shape is in `src/types.ts`; Rust's corresponding structs are in `src-tauri/src/model.rs`. Each adapter takes an untrusted JSON value and updates a single journal projection. Unknown records are ignored.
 
+Adapters extract an explicit session title where one is recorded and otherwise derive a bounded title from the first user request. A separate short task label follows the latest user request. Tool results are excluded from this extraction. Task labels, tool categories, and optional file basenames are displayed locally; short requests may appear entirely in their label. Command arguments and tool output are not serialized to the renderer. This is a best-effort summary of journal evidence, not a semantic interpretation of the agent's plans.
+
 | Harness | Source                                                                 | Limitations                                                                                                                                                                                           |
 | ------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Codex   | `session_meta`, `event_msg`, tool-call `response_item`                 | CLI and noninteractive CLI journals only. Private rollout format. Parent IDs are used only when explicitly present.                                                                                   |

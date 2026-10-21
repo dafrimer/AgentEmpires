@@ -10,11 +10,14 @@ test('world, selection, filters, companion and connection settings', async ({ pa
   const worker = page.locator('[data-session="demo-0"] .worker').first();
   await worker.locator('.worker-hit').hover();
   await expect(worker.locator('.worker-speech')).toBeVisible();
-  await expect(worker.locator('.worker-speech')).toContainText('Building the settlement');
+  await expect(worker.locator('.worker-speech')).toContainText('Editing routes.ts');
   await page.mouse.move(5, 5);
   await page.locator('[data-session="demo-3"]').focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('.settlement-heading h2')).toHaveText('Northern passage');
+  await expect(page.locator('.activity-callout')).toContainText(
+    'Plan the northern passage between Atlas regions',
+  );
   await expect(page.locator('.inspector .status')).toContainText('Needs you');
   await page.getByRole('button', { name: 'Claude Code', exact: true }).click();
   await expect(page.locator('[data-session]')).toHaveCount(2);
@@ -22,10 +25,15 @@ test('world, selection, filters, companion and connection settings', async ({ pa
   await page.getByRole('textbox', { name: 'Find a settlement' }).fill('library');
   await expect(page.locator('[data-session]')).toHaveCount(1);
   await page.getByRole('textbox', { name: 'Find a settlement' }).fill('');
+  await page.getByRole('textbox', { name: 'Find a settlement' }).fill('inventory options');
+  await expect(page.locator('[data-session]')).toHaveCount(1);
+  await page.getByRole('textbox', { name: 'Find a settlement' }).fill('');
   await page.getByRole('button', { name: 'Pause animation', exact: true }).click();
   await expect(page.locator('.map-panel')).toHaveClass(/paused/);
   await page.getByRole('button', { name: 'Desktop companion' }).click();
   await expect(page.locator('.companion')).toBeVisible();
+  await expect(page.locator('.companion-tools > span')).toContainText('Northern passage');
+  await expect(page.locator('.companion-bubble')).toContainText('Plan the northern passage');
   await page.getByRole('button', { name: 'Expand world' }).click();
   await expect(page.locator('.world-layout')).toBeVisible();
   await page.getByRole('button', { name: 'Connections and settings' }).click();

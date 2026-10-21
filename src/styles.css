@@ -476,6 +476,10 @@ main {
     sans-serif;
   letter-spacing: 0.15px;
 }
+.map-bubble .bubble-action {
+  fill: #95ad83;
+  font-size: 9px;
+}
 .map-bottom {
   position: absolute;
   bottom: 18px;
@@ -661,6 +665,12 @@ footer b {
   display: block;
   margin-top: 5px;
   overflow-wrap: anywhere;
+}
+.activity-callout .observed-action {
+  display: block;
+  color: #9fb28e;
+  font-size: 10px;
+  margin-top: 7px;
 }
 .section-label {
   display: flex;
@@ -1138,6 +1148,12 @@ footer button {
 .companion-tools button {
   padding: 0;
   display: flex;
+}
+.companion-tools > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 .companion-world {
   width: 280px;
