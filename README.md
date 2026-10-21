@@ -13,6 +13,7 @@ AgentEmpires turns local **Codex, Claude Code, GitHub Copilot CLI, and Oh My Pi*
 - Related repositories attract neighboring tiles. Shared file activity creates stronger connections. Git worktrees share a repository identity.
 - A transparent, always-on-top desktop companion expands to the full map on double-click. The tray/menu-bar menu brings either view back.
 - Search, harness filters, active-only view, pan, zoom, activity bubbles, and a local chronicle.
+- Hover over a worker to see that individual agent's current activity. Demo mode and selection stay in sync between the map and companion.
 - Construction grows with observed activity; it is decorative and **does not claim a percentage of task completion**.
 - Reveal the original journal in Finder/Explorer, or copy a resume command for your terminal.
 - Demo mode is clearly labeled and never mixed with live activity.

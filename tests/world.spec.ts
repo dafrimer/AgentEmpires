@@ -7,6 +7,11 @@ test('world, selection, filters, companion and connection settings', async ({ pa
     page.getByText('An illustrative world. These settlements are simulated.'),
   ).toBeVisible();
   await expect(page.locator('[data-session]')).toHaveCount(6);
+  const worker = page.locator('[data-session="demo-0"] .worker').first();
+  await worker.locator(':scope > circle').hover();
+  await expect(worker.locator('.worker-speech')).toBeVisible();
+  await expect(worker.locator('.worker-speech')).toContainText('Building the settlement');
+  await page.mouse.move(5, 5);
   await page.locator('[data-session="demo-3"]').focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('.settlement-heading h2')).toHaveText('Northern passage');

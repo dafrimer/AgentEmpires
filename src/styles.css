@@ -1219,6 +1219,12 @@ html:has(.companion),
 .walking {
   animation: walk-path 9s ease-in-out infinite;
 }
+.worker-speech {
+  display: none;
+}
+.worker:hover .worker-speech {
+  display: block;
+}
 .tool {
   transform-origin: 4px -6px;
   animation: work-tool 1.3s ease-in-out infinite;

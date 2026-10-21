@@ -43,7 +43,7 @@ function Logo() {
   );
 }
 export default function App() {
-  const [demo, setDemo] = useState(!native);
+  const [demo, setDemo] = useState(() => !native || localStorage.getItem('ae-demo') === 'true');
   const [snapshot, setSnapshot] = useState<Snapshot>(() => (native ? empty : demoSnapshot()));
   const [selected, setSelected] = useState<string | null>(() =>
     localStorage.getItem('ae-selected'),
@@ -87,9 +87,16 @@ export default function App() {
     localStorage.setItem('ae-paused', String(paused));
   }, [paused]);
   useEffect(() => {
+    localStorage.setItem('ae-demo', String(demo));
+  }, [demo]);
+  useEffect(() => {
     const sync = (e: StorageEvent) => {
       if (e.key === 'ae-selected') setSelected(e.newValue);
       if (e.key === 'ae-paused') setPaused(e.newValue === 'true');
+      if (e.key === 'ae-demo') {
+        setSnapshot(empty);
+        setDemo(e.newValue === 'true');
+      }
     };
     window.addEventListener('storage', sync);
     return () => window.removeEventListener('storage', sync);

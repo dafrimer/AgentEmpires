@@ -78,6 +78,8 @@ function Worker({
   index,
   working,
   waiting,
+  name,
+  activity,
 }: {
   x: number;
   y: number;
@@ -85,6 +87,8 @@ function Worker({
   index: number;
   working: boolean;
   waiting: boolean;
+  name: string;
+  activity: string;
 }) {
   return (
     <g transform={`translate(${x} ${y})`}>
@@ -92,6 +96,7 @@ function Worker({
         className={working ? 'worker walking' : 'worker'}
         style={{ animationDelay: `-${index * 1.7}s`, animationDuration: `${7 + (index % 3)}s` }}
       >
+        <title>{`${name}: ${activity}`}</title>
         <ellipse cy="5" rx="6" ry="3" fill="#233a2e" opacity=".35" />
         <path d="m-2-2-2 7m6-7 2 7" stroke="#394d3d" strokeWidth="2.4" strokeLinecap="round" />
         <path d="M-4-10h8l1 10H-5Z" fill={color} stroke="#344936" strokeWidth="1" />
@@ -111,6 +116,16 @@ function Worker({
             </text>
           </g>
         )}
+        <g className="worker-speech" pointerEvents="none">
+          <rect x="-88" y="-65" width="176" height="35" rx="5" fill="#14291d" stroke="#b7c797" />
+          <path d="m-4-30 4 5 4-5" fill="#14291d" stroke="#b7c797" />
+          <text y="-52" textAnchor="middle" fill="#e0e7ce" fontSize="9">
+            {name.slice(0, 28)}
+          </text>
+          <text y="-40" textAnchor="middle" fill="#aabc91" fontSize="8">
+            {activity.split(' · ')[0].slice(0, 34)}
+          </text>
+        </g>
       </g>
     </g>
   );
@@ -199,6 +214,8 @@ export default function Settlement({
           index={i}
           working={a.status === 'working'}
           waiting={a.status === 'waiting'}
+          name={a.name}
+          activity={a.activity}
         />
       ))}
       {session.agents.length > 8 && (
