@@ -1,6 +1,6 @@
 {
   "name": "agent-empires",
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.1",
   "private": true,
   "type": "module",
   "description": "A living desktop world for your local coding agents.",

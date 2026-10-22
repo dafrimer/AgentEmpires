@@ -53,7 +53,7 @@ npm run tauri build -- --bundles app,dmg
 npm run tauri build -- --bundles nsis
 ```
 
-CI builds **macOS Apple Silicon, macOS Intel, and Windows x64**, runs Rust tests on all three, and uploads installers as workflow artifacts. These initial development artifacts are not notarized or publisher-signed. A public launch requires the native checklist in [release verification](docs/RELEASE.md), including signing and installation checks on both operating systems.
+CI builds **macOS Apple Silicon, macOS Intel, and Windows x64**, runs Rust tests on all three, and uploads installers as workflow artifacts. Alpha prereleases may package these artifacts as clearly labeled unsigned test builds. A stable public launch requires the native checklist in [release verification](docs/RELEASE.md), including signing and installation checks on both operating systems.
 
 ## Connecting the four kingdoms
 

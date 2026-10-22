@@ -19,10 +19,14 @@ Both macOS and Windows are launch requirements. Passing a cross-platform compile
 - [ ] Observe a quiet desktop with multiple sessions and check that CPU/battery use is acceptable; check animation pause and reduced motion.
 - [ ] Test multiple monitors and display scaling. Confirm the companion stays reachable after a monitor is disconnected.
 
-## Distribution
+## Development prereleases
+
+An alpha prerelease may attach installers produced by a green cross-platform CI run. Its notes must identify them as unsigned test builds and link the commit and CI run. This does not complete native acceptance or constitute a stable public launch.
+
+## Stable distribution
 
 - [ ] Sign and notarize macOS builds with an authorized Developer ID.
 - [ ] Sign Windows installers with an authorized signing identity.
-- [ ] Publish a versioned GitHub release only after all native checks are recorded.
+- [ ] Publish a stable GitHub release only after all native checks are recorded.
 
 CI workflow artifacts are development builds until these checks are complete. No signing keys or credentials belong in this repository.
