@@ -1,4 +1,12 @@
-import type { Session } from './types';
+import type { Agent, Session } from './types';
+export function settlersOnMap(session: Session, now = Date.now()): Agent[] {
+  return session.agents.filter((agent) => {
+    if (agent.status === 'stale') return false;
+    if (agent.status === 'complete') return now - agent.updatedAt < 12_000;
+    if (agent.status === 'idle' && agent.parentId) return now - agent.updatedAt < 120_000;
+    return true;
+  });
+}
 export type Cell = { q: number; r: number };
 const directions = [
   { q: 1, r: 0 },

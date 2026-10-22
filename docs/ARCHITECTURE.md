@@ -27,7 +27,7 @@ Adapters extract an explicit session title where one is recorded and otherwise d
 
 | Harness | Source                                                                 | Limitations                                                                                                                                                                                           |
 | ------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Codex   | `session_meta`, `event_msg`, tool-call `response_item`                 | CLI and noninteractive CLI journals only. Private rollout format. Parent IDs are used only when explicitly present.                                                                                   |
+| Codex   | `session_meta`, `event_msg`, tool-call `response_item`                 | Local CLI and desktop journals. Private rollout format. Parent IDs are used only when explicitly present; guardian/review helpers are excluded.                                                       |
 | Claude  | User/assistant journal records, tool-use blocks, turn-duration records | Older versions may omit an explicit end-of-turn marker. Child files establish the root-session relationship; deeper ancestry may be unavailable.                                                      |
 | Copilot | `session.start`, turn/tool/permission/subagent events                  | Historical tool-call records without an agent ID cannot be reliably attributed to a child and are shown on the root.                                                                                  |
 | OMP     | Session header, messages, custom tool-start/exit records               | Streaming output may not persist until completion. `parentSession` is a fork relation and is deliberately not treated as a worker relation. Companion child journals establish ancestry when present. |
@@ -40,7 +40,7 @@ Known file-watching limits: an append combined with a middle-of-file rewrite tha
 
 Axial hex coordinates avoid collisions. Existing tiles retain their coordinates for the current view; new tiles choose an adjacent free location minimizing repository/shared-file distance. File overlap is evidence of related activity, not a merge-conflict diagnosis. Filters can rebuild a filtered arrangement. The map supports pan, zoom, keyboard selection, reduced motion, and a persistent pause toggle.
 
-SVG houses, trees, people, paths, terrain, flags, and smoke are authored in source. Building tiers are decorative thresholds of observed event count, not productivity scores. At most eight workers are drawn per tile; all observed workers remain listed in the inspector.
+SVG houses, trees, people, paths, terrain, flags, and smoke are authored in source. Building tiers are decorative thresholds of observed event count, not productivity scores. The lead uses an original paladin sprite; subagents without a journal name get deterministic distinct names. At most eight present workers are drawn per tile. Completed children leave the map after 12 seconds and stale workers are hidden; all observed workers remain listed in the inspector.
 
 ## Desktop shell
 

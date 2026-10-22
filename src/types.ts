@@ -13,6 +13,7 @@ export type Session = {
   id: string;
   rawId: string;
   harness: Harness;
+  client?: string | null;
   title: string;
   task?: string | null;
   cwd: string;

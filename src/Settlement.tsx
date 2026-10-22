@@ -2,10 +2,12 @@ import { useId } from 'react';
 import type { CSSProperties } from 'react';
 import type { Session, Status } from './types';
 import { HARNESSES } from './types';
+import { settlersOnMap } from './world';
 
 const HEX = 'M0-79 110-39 110 39 0 79-110 39-110-39Z';
 const ENVIRONMENT = '/art/environment.png';
 const VILLAGERS = '/art/villagers.png';
+const PALADIN = '/art/paladin.png';
 const TOOL_WORKBENCH = '/art/tool-workbench.png';
 // Explicit atlas regions preserve transparent margins without preprocessing the source art.
 const REGIONS = {
@@ -44,7 +46,15 @@ function Scenery({
   );
 }
 
-function Pose({ frame, className = '' }: { frame: number; className?: string }) {
+function Pose({
+  frame,
+  className = '',
+  lead = false,
+}: {
+  frame: number;
+  className?: string;
+  lead?: boolean;
+}) {
   return (
     <svg
       className={className}
@@ -57,7 +67,7 @@ function Pose({ frame, className = '' }: { frame: number; className?: string }) 
       pointerEvents="none"
       aria-hidden="true"
     >
-      <image href={VILLAGERS} width="1536" height="1024" />
+      <image href={lead ? PALADIN : VILLAGERS} width="1536" height="1024" />
     </svg>
   );
 }
@@ -83,15 +93,17 @@ function ToolPose({ frame }: { frame: number }) {
 function WalkingPose({
   faceLeft = false,
   carrying = false,
+  lead = false,
 }: {
   faceLeft?: boolean;
   carrying?: boolean;
+  lead?: boolean;
 }) {
   return (
     <g className={faceLeft ? 'face-left' : ''}>
       <g className="walk-body">
-        <Pose frame={1} className="pose-primary" />
-        <Pose frame={2} className="pose-secondary" />
+        <Pose frame={1} className="pose-primary" lead={lead} />
+        <Pose frame={2} className="pose-secondary" lead={lead} />
         {carrying && (
           <g className="carried-supplies" transform="translate(5 -16)" pointerEvents="none">
             <ellipse rx="8" ry="4" fill="#745334" stroke="#cfac73" strokeWidth="1" />
@@ -111,6 +123,8 @@ function Worker({
   status,
   name,
   activity,
+  lead,
+  sessionStatus,
 }: {
   x: number;
   y: number;
@@ -119,11 +133,14 @@ function Worker({
   status: Status;
   name: string;
   activity: string;
+  lead: boolean;
+  sessionStatus: Status;
 }) {
   const working = status === 'working';
   const waiting = status === 'waiting';
-  // Idle villagers make quiet rounds; this is world ambience, not claimed agent work.
-  const patrolling = status === 'idle' || status === 'complete';
+  // Idle subagents can make quiet rounds while the lead is still working.
+  // A finished settlement rests, and completed workers never keep patrolling.
+  const patrolling = status === 'idle' && sessionStatus === 'working' && !lead;
   // Shell and test execution also count as construction on the board. The
   // activity bubble keeps the more precise label from the journal adapter.
   const toolUse =
@@ -199,7 +216,14 @@ function Worker({
           strokeWidth=".8"
           opacity=".8"
         />
-        {toolUse ? (
+        {toolUse && lead ? (
+          <g className="lead-workshop">
+            <path d="M5-9 23-15 30-10 12-3Z" fill="#6e4b2d" stroke="#d4ad70" strokeWidth="1" />
+            <path d="M12-8 22-11 26-9 16-6Z" fill="#dfd0a5" />
+            <path className="compass-arm" d="M18-8 22-12" stroke="#d7bb68" strokeWidth="1.5" />
+            <Pose frame={0} lead />
+          </g>
+        ) : toolUse ? (
           <>
             {[0, 1, 2, 3].map((frame) => (
               <ToolPose key={frame} frame={frame} />
@@ -208,19 +232,19 @@ function Worker({
         ) : traveling ? (
           <>
             <g className="route-outbound">
-              <WalkingPose faceLeft={destinationX < originX} />
+              <WalkingPose faceLeft={destinationX < originX} lead={lead} />
             </g>
             <g className="route-harvest">
-              <Pose frame={patrolling ? 0 : forestTrip ? 6 : 7} />
+              <Pose frame={patrolling ? 0 : forestTrip ? 6 : 7} lead={lead} />
             </g>
             <g className="route-return">
-              <WalkingPose faceLeft={destinationX > originX} carrying={harvesting} />
+              <WalkingPose faceLeft={destinationX > originX} carrying={harvesting} lead={lead} />
             </g>
           </>
         ) : (
           <>
-            <Pose frame={building ? 4 : 0} className={building ? 'pose-primary' : ''} />
-            {building && <Pose frame={5} className="pose-secondary" />}
+            <Pose frame={building ? 4 : 0} className={building ? 'pose-primary' : ''} lead={lead} />
+            {building && <Pose frame={5} className="pose-secondary" lead={lead} />}
           </>
         )}
         <rect
@@ -265,6 +289,7 @@ export default function Settlement({
 }) {
   const id = useId().replace(/:/g, '');
   const h = HARNESSES[session.harness];
+  const present = settlersOnMap(session);
   const working = session.agents.some((a) => a.status === 'working');
   const positions = [
     [28, 40],
@@ -349,7 +374,7 @@ export default function Settlement({
       {session.eventCount > 25 && <Scenery kind="cottage" x={-52} y={38} width={61} />}
       {session.eventCount > 65 && <Scenery kind="cottage" x={66} y={49} width={54} />}
       <Scenery kind="forest" x={-83} y={48} width={38} />
-      {session.agents.slice(0, 8).map((a, i) => (
+      {present.slice(0, 8).map((a, i) => (
         <Worker
           key={a.id}
           x={positions[i][0]}
@@ -359,11 +384,13 @@ export default function Settlement({
           status={a.status}
           name={a.name}
           activity={a.activity}
+          lead={!a.parentId}
+          sessionStatus={session.status}
         />
       ))}
-      {session.agents.length > 8 && (
+      {present.length > 8 && (
         <text x="65" y="67" fontSize="11" fill="#f3ebcf">
-          +{session.agents.length - 8}
+          +{present.length - 8}
         </text>
       )}
       {!compact && (

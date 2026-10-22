@@ -43,4 +43,8 @@ fn main() {
     if snapshot.scanning {
         println!("Backlog still being read; run the desktop monitor to continue.");
     }
+    if let Some(id) = std::env::args().nth(1) {
+        let found = snapshot.sessions.iter().any(|s| s.raw_id == id);
+        println!("Requested top-level session present: {found}");
+    }
 }

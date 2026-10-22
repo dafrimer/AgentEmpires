@@ -182,17 +182,25 @@ fn codex(out: &mut Session, v: &Value, at: i64) {
             if !s(p, "title").is_empty() {
                 out.set_title(s(p, "title"));
             }
-            out.excluded = matches!(
-                p["source"].as_str(),
-                Some("vscode" | "appServer" | "app-server")
+            out.client = Some(
+                if matches!(
+                    p["source"].as_str(),
+                    Some("vscode" | "appServer" | "app-server")
+                ) {
+                    "Codex desktop"
+                } else {
+                    "Codex CLI"
+                }
+                .into(),
             );
+            out.excluded = false;
             if let Some(parent) = p
                 .pointer("/source/subagent/thread_spawn/parent_thread_id")
                 .and_then(Value::as_str)
             {
                 out.parent_session = Some(parent.into());
             }
-            // Guardian / review helpers are not top-level CLI sessions.
+            // Guardian / review helpers are not top-level user sessions.
             if p["source"].is_object() && out.parent_session.is_none() {
                 out.excluded = true;
             }
@@ -584,19 +592,26 @@ mod tests {
         assert_eq!(out.status, Status::Working);
     }
     #[test]
-    fn codex_ignores_desktop_and_resolves_spawn_parent() {
+    fn codex_includes_desktop_and_resolves_spawn_parent() {
         let mut out = Session::new(Harness::Codex, "rollout.jsonl");
         event(
             &mut out,
             json!({"type":"session_meta","payload":{"id":"s1","cwd":"/repo","source":"vscode"}}),
         );
-        assert!(out.excluded);
+        assert!(!out.excluded);
+        assert_eq!(out.client.as_deref(), Some("Codex desktop"));
         event(
             &mut out,
             json!({"type":"session_meta","payload":{"id":"s2","cwd":"/repo","source":{"subagent":{"thread_spawn":{"parent_thread_id":"s1"}}}}}),
         );
         assert_eq!(out.parent_session.as_deref(), Some("s1"));
         assert!(!out.excluded);
+        let mut helper = Session::new(Harness::Codex, "guardian.jsonl");
+        event(
+            &mut helper,
+            json!({"type":"session_meta","payload":{"id":"s3","cwd":"/repo","source":{"subagent":{"other":"guardian"}}}}),
+        );
+        assert!(helper.excluded);
     }
     #[test]
     fn claude_subagent_is_not_a_second_settlement() {

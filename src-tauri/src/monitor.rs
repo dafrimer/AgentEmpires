@@ -226,6 +226,7 @@ impl Monitor {
         self.journals.retain(|p, _| seen.contains(p));
         merge_children(&mut snapshot.sessions);
         for session in &mut snapshot.sessions {
+            name_subagents(session);
             // A lead agent can finish while its delegated workers continue.
             if let Some(agent) = session
                 .agents
@@ -289,6 +290,12 @@ fn merge_children(sessions: &mut Vec<Session>) {
             if a.name == "Lead agent" {
                 a.name = "Subagent".into();
             }
+            // Child journals that ended their turn represent finished assignments,
+            // not people still making rounds in the parent's settlement.
+            if a.status == Status::Idle && a.activity.starts_with("Turn finished") {
+                a.status = Status::Complete;
+                a.activity = "Assignment complete".into();
+            }
         }
         additions.push((root, agents, s.files.clone(), s.last_activity));
         children.insert(child);
@@ -305,6 +312,47 @@ fn merge_children(sessions: &mut Vec<Session>) {
         i += 1;
         keep
     });
+}
+fn name_subagents(session: &mut Session) {
+    const NAMES: &[&str] = &[
+        "Alden", "Brina", "Corin", "Dara", "Elric", "Faye", "Galen", "Hilda", "Ivo", "Jora",
+        "Kellan", "Lina", "Marek", "Nessa", "Orin", "Petra", "Quinn", "Runa", "Soren", "Talia",
+        "Ulric", "Vera", "Wren", "Yara",
+    ];
+    let mut used: HashSet<String> = session
+        .agents
+        .iter()
+        .filter(|a| a.name != "Subagent")
+        .map(|a| a.name.clone())
+        .collect();
+    let mut generic: Vec<usize> = session
+        .agents
+        .iter()
+        .enumerate()
+        .filter_map(|(i, a)| (a.name == "Subagent").then_some(i))
+        .collect();
+    generic.sort_by(|&a, &b| session.agents[a].id.cmp(&session.agents[b].id));
+    for i in generic {
+        let mut hash = 0xcbf29ce484222325_u64;
+        for byte in session.agents[i].id.bytes() {
+            hash = (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3);
+        }
+        let start = (hash as usize) % NAMES.len();
+        let mut n = 0;
+        loop {
+            let base = NAMES[(start + n) % NAMES.len()];
+            let name = if n < NAMES.len() {
+                base.to_string()
+            } else {
+                format!("{base} {}", n / NAMES.len() + 1)
+            };
+            if used.insert(name.clone()) {
+                session.agents[i].name = name;
+                break;
+            }
+            n += 1;
+        }
+    }
 }
 fn normalize_file(cwd: &str, file: &str) -> String {
     let p = Path::new(file);
@@ -464,6 +512,55 @@ mod tests {
                 .as_deref(),
             Some("codex:b:root")
         );
+    }
+    #[test]
+    fn finished_children_depart_with_distinct_stable_names() {
+        let mut parent = Session::new(Harness::Codex, "parent");
+        parent.identify("parent");
+        parent.record(None, Status::Working, "Editing".into(), "building", 1);
+        let mut children = Vec::new();
+        for id in ["child-a", "child-b"] {
+            let mut child = Session::new(Harness::Codex, id);
+            child.identify(id);
+            child.parent_session = Some("parent".into());
+            child.record(
+                None,
+                Status::Idle,
+                "Turn finished · resting by the fire".into(),
+                "idle",
+                2,
+            );
+            children.push(child);
+        }
+        let mut sessions = vec![parent];
+        sessions.extend(children);
+        merge_children(&mut sessions);
+        name_subagents(&mut sessions[0]);
+        let named: Vec<_> = sessions[0]
+            .agents
+            .iter()
+            .filter(|a| a.parent_id.is_some())
+            .collect();
+        assert_eq!(named.len(), 2);
+        assert_ne!(named[0].name, named[1].name);
+        assert!(named.iter().all(|a| a.status == Status::Complete));
+        assert!(named.iter().all(|a| a.activity == "Assignment complete"));
+        let original_names: HashMap<_, _> = named
+            .iter()
+            .map(|a| (a.id.clone(), a.name.clone()))
+            .collect();
+        sessions[0].agents.reverse();
+        for agent in &mut sessions[0].agents {
+            if agent.parent_id.is_some() {
+                agent.name = "Subagent".into();
+            }
+        }
+        name_subagents(&mut sessions[0]);
+        assert!(sessions[0]
+            .agents
+            .iter()
+            .filter(|a| a.parent_id.is_some())
+            .all(|a| original_names[&a.id] == a.name));
     }
     #[test]
     fn worktrees_share_repository_identity() {

@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { Focus, Minus, Plus, Pause, Play, Map as MapIcon } from 'lucide-react';
 import type { Session } from './types';
-import { arrange, point, affinity, sharedFiles } from './world';
+import { arrange, point, affinity, settlersOnMap, sharedFiles } from './world';
 import type { Cell } from './world';
 import Settlement from './Settlement';
 
@@ -155,7 +155,7 @@ export default function WorldMap({
                     transform={`translate(${p.x} ${p.y})`}
                     role="button"
                     tabIndex={0}
-                    aria-label={`${s.title}, ${s.agents.length} agents, ${s.status}`}
+                    aria-label={`${s.title}, ${settlersOnMap(s).length} agents here, ${s.status}`}
                     aria-pressed={selected === s.id}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {

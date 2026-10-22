@@ -194,27 +194,19 @@ test('working villagers make a round trip and carry resources home', async ({ pa
   await expect(route.locator('.route-return .carried-supplies')).toHaveCount(1);
 });
 
-test('idle villagers walk short rounds instead of standing still', async ({ page }) => {
+test('finished settlements rest and the lead has a distinct paladin sprite', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.goto('/');
-  const villager = page.locator('[data-session="demo-5"] .idle-route').first();
-  await expect(villager).toBeVisible();
-  await expect(villager.locator('.route-outbound .pose-secondary')).toHaveCount(1);
-  await expect(villager.locator('.route-return .pose-secondary')).toHaveCount(1);
-  const samples = await villager.evaluate((element) => {
-    const animation = element
-      .getAnimations()
-      .find((item) => (item as CSSAnimation).animationName === 'idle-route')!;
-    animation.pause();
-    const timing = animation.effect!.getTiming();
-    return [0.05, 0.45, 0.95].map((progress) => {
-      animation.currentTime = progress * Number(timing.duration) - Number(timing.delay);
-      return new DOMMatrixReadOnly(getComputedStyle(element).transform).m41;
-    });
-  });
-  expect(Math.abs(samples[0])).toBeLessThan(2);
-  expect(samples[1]).toBeGreaterThan(15);
-  expect(Math.abs(samples[2])).toBeLessThan(2);
+  const resting = page.locator('[data-session="demo-5"] .worker').first();
+  await expect(resting).toBeVisible();
+  await expect(resting).not.toHaveClass(/idle-route|walking/);
+  await expect(resting.locator('image[href="/art/paladin.png"]')).toHaveCount(1);
+  await expect(
+    page
+      .locator('[data-session="demo-0"] .worker')
+      .first()
+      .locator('image[href="/art/paladin.png"]'),
+  ).not.toHaveCount(0);
 });
 
 test('other tool calls use a separate animated workbench', async ({ page }) => {

@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { arrange, distance, affinity, sharedFiles, resumeCommand, agentDepth } from './world';
+import {
+  arrange,
+  distance,
+  affinity,
+  sharedFiles,
+  resumeCommand,
+  agentDepth,
+  settlersOnMap,
+} from './world';
 import { demoSnapshot } from './demo';
 describe('world placement', () => {
   it('has no overlaps and keeps established settlements stable', () => {
@@ -37,5 +45,17 @@ describe('safe session navigation', () => {
     expect(resumeCommand(s)).toContain('omp --resume');
     const a = demoSnapshot().sessions[0];
     expect(agentDepth('worker-3', a.agents)).toBe(2);
+  });
+});
+describe('settler presence', () => {
+  it('lets finished workers leave while keeping their journal history', () => {
+    const session = demoSnapshot().sessions[0];
+    const finished = session.agents.at(-1)!;
+    const now = finished.updatedAt;
+    expect(settlersOnMap(session, now).some((agent) => agent.id === finished.id)).toBe(true);
+    expect(settlersOnMap(session, now + 12_000).some((agent) => agent.id === finished.id)).toBe(
+      false,
+    );
+    expect(session.agents).toContain(finished);
   });
 });

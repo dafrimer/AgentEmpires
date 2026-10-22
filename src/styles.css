@@ -704,6 +704,9 @@ footer b {
   align-items: center;
   position: relative;
 }
+.agent-row.away {
+  opacity: 0.57;
+}
 .agent-avatar {
   width: 29px;
   height: 29px;
@@ -1249,6 +1252,10 @@ html:has(.companion),
 .idle-route {
   animation: idle-route var(--route-duration) ease-in-out infinite;
   animation-delay: var(--route-delay);
+}
+.lead-workshop .compass-arm {
+  transform-origin: 20px -10px;
+  animation: work-tool 1.3s ease-in-out infinite;
 }
 .route-outbound,
 .route-harvest,

@@ -6,6 +6,7 @@ AgentEmpires uses original generated raster artwork inspired by classic medieval
 
 - `environment.png`: 1254 × 1254 RGBA; town center, cottage, pines, wheat farm. Source regions are defined in `src/Settlement.tsx`.
 - `villagers.png`: 1536 × 1024 RGBA; four columns and two rows of villager poses. Background RGB values may remain under transparent alpha; always preserve the alpha channel.
+- `paladin.png`: 1536 × 1024 RGBA; matching four-by-two poses for the lead agent, in blue cloth and steel armor.
 - `meadow.png`: 1254 × 1254 grass texture, clipped into each hex tile at runtime.
 - `tool-workbench.png`: 1254 × 1254 RGBA; four related poses of a villager working at a map and instrument table.
 
@@ -26,7 +27,6 @@ Primary request: a distinct third activity for a coding agent using a generic to
 Composition: 1024x1024 square canvas with a precise 2x2 grid of four 512x512 independent cells. Top left: pose A villager studying map with one hand on parchment. Top right: same villager at same table, same scale and ground position, reaching to turn brass compass or adjust an instrument. Bottom left: pose A repeated but looking down and marking the map with quill. Bottom right: pose B repeated, moving a marker across map. All four cells show the SAME character and SAME workbench, camera angle, composition, lighting, and scale; only arm and head movement changes. Each whole sprite centered horizontally, contact point at local y=455, no crossing cell edges, at least 25px empty alpha margin. Character roughly 290px tall, workbench about hip height. Isometric orthographic 30-degree view, lit upper left.
 Textures: weathered timber, parchment fibers, brass glint, natural fabric, subtle shadows. Earthy palette bright enough on dark forest interface. Detailed anatomy, no exaggerated face or thick outline. Genuine transparent background, completely alpha-clear between objects and cells. No ground platform, no writing or legible text, no labels, no grid lines, no watermark, no building, no extra people.
 ```
-
 
 ### Environment
 
@@ -55,6 +55,12 @@ Bottom row left to right: holding a wood-handled hammer lifted high ready to str
 No tree stumps, no environments, no terrain, no ground platform, no labels, no text, no grid lines, no watermark. Real alpha transparency surrounding every figure with only subtle contact shadow at feet. Production sprites, small-scale readable silhouettes and consistent character design across frames.
 ```
 
+### Lead paladin
+
+```text
+Use case: stylized-concept. Asset type: original transparent 2D lead-agent sprite atlas for AgentEmpires, a small isometric medieval strategy-game map. Use the provided villager atlas ONLY as a reference for its exact 4-column by 2-row pose layout, scale, ground baseline, camera angle, realistic painterly sprite fidelity, and lighting. Create a DISTINCT noble paladin/commander character with brushed steel half-plate armor over dark blue cloth, modest ochre trim, leather boots, short blue cape and small crest; no helmet obscuring the face. Same character in all eight independent cells, facing southeast/right. Top row left to right: standing alert, walking left step, walking passing step, walking right step. Bottom row: raising a compact hammer to build, striking with hammer, carrying timber bundle, carrying a basket. Exact 1536 by 1024 image, each cell 384 by 512; full figure centered in each cell, identical scale and foot baseline near local y=450, no clipping or crossing cells. Genuine alpha transparency everywhere around each figure and between grid cells, including gaps between limbs. No background, no grid, no text, no watermark, no other people, no horses, no oversized fantasy effects. Crisp readable silhouette at 28-pixel display size.
+```
+
 ### Villager transparency refinement
 
 ```text
@@ -71,4 +77,3 @@ Use case: stylized-concept
 Asset type: seamless ground texture for a medieval 2D isometric RTS map, AgentEmpires.
 Primary request: classic Age of Empires II style realistic painted grass terrain. Square 1024x1024 overhead orthographic texture covering the whole canvas edge to edge. Fine mottled olive and warm meadow-green grass, tiny ochre dry patches and sparse tiny pebbles. Gentle variations in short grass, earthy slightly desaturated colors. Fine texture visible at small sizes. No large objects, no shrubs, no trees, no flowers, no path, no buildings, no shadows, no perspective horizon, no grid, no hexagon, no text. Even diffuse daylight. Seamless tileable appearance on all edges. Opaque texture, no transparency.
 ```
-

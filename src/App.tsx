@@ -5,6 +5,7 @@ import {
   ArrowUpRight,
   ChevronRight,
   Copy,
+  Crown,
   ExternalLink,
   Flag,
   GitBranch,
@@ -27,7 +28,7 @@ import {
 } from 'lucide-react';
 import type { Harness, Session, Settings, Snapshot } from './types';
 import { HARNESSES, STATUS_LABEL } from './types';
-import { age, agentDepth, resumeCommand, sharedFiles } from './world';
+import { age, agentDepth, resumeCommand, settlersOnMap, sharedFiles } from './world';
 import { demoSnapshot } from './demo';
 import WorldMap from './WorldMap';
 import Settlement from './Settlement';
@@ -119,7 +120,9 @@ export default function App() {
       `${s.title} ${s.task ?? ''} ${s.repoName}`.toLowerCase().includes(query.toLowerCase()),
   );
   const current = sessions.find((s) => s.id === selected) ?? sessions[0];
-  const workers = snapshot.sessions.reduce((n, s) => n + s.agents.length, 0);
+  const currentPresent = current ? settlersOnMap(current) : [];
+  const currentPresentIds = new Set(currentPresent.map((agent) => agent.id));
+  const workers = snapshot.sessions.reduce((n, s) => n + settlersOnMap(s).length, 0);
   const working = snapshot.sessions.reduce(
     (n, s) => n + s.agents.filter((a) => a.status === 'working').length,
     0,
@@ -195,7 +198,7 @@ export default function App() {
             <div className="companion-bubble">
               {current.task ?? current.activity.split(' · ')[0]}
               <span>
-                {current.activity.split(' · ')[0]} · {current.agents.length} settlers
+                {current.activity.split(' · ')[0]} · {currentPresent.length} settlers
               </span>
             </div>
             <svg viewBox="-140 -125 280 260" className="companion-world">
@@ -387,7 +390,8 @@ export default function App() {
                   <div>
                     <h2>{current.title}</h2>
                     <span>
-                      {HARNESSES[current.harness].label} <b>·</b> {current.repoName}
+                      {current.client ?? HARNESSES[current.harness].label} <b>·</b>{' '}
+                      {current.repoName}
                     </span>
                   </div>
                 </div>
@@ -408,17 +412,20 @@ export default function App() {
                 </div>
                 <div className="section-label">
                   <span>THE SETTLERS</span>
-                  <span>{current.agents.length}</span>
+                  <span>
+                    {currentPresent.length} here · {current.agents.length - currentPresent.length}{' '}
+                    away
+                  </span>
                 </div>
                 <div className="agent-tree">
                   {current.agents.map((a) => (
                     <div
-                      className="agent-row"
+                      className={`agent-row ${currentPresentIds.has(a.id) ? '' : 'away'}`}
                       key={a.id}
                       style={{ marginLeft: `${agentDepth(a.id, current.agents) * 12}px` }}
                     >
                       <span className={`agent-avatar ${a.status}`}>
-                        {a.parentId ? <Users size={14} /> : <Flag size={14} />}
+                        {a.parentId ? <Users size={14} /> : <Crown size={14} />}
                       </span>
                       <div>
                         <strong>{a.name}</strong>
