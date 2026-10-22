@@ -1,4 +1,5 @@
 use crate::{adapters, model::*};
+use rusqlite::{params, Connection, OpenFlags, OptionalExtension};
 use std::{
     collections::{BTreeMap, HashMap, HashSet},
     fs::{self, File},
@@ -11,6 +12,31 @@ use walkdir::WalkDir;
 const MAX_JOURNALS: usize = 256;
 const MAX_RECORD: usize = 4 * 1024 * 1024;
 const READ_BUDGET: u64 = 8 * 1024 * 1024;
+
+// Codex's visible, possibly renamed chat title is stored beside its journals.
+// This private store is optional: older installations and custom journal roots
+// continue to use the journal-derived title if it cannot be read.
+struct CodexTitles(Option<Connection>);
+impl CodexTitles {
+    fn open(journal_root: &Path) -> Self {
+        let db = journal_root.parent().map(|p| p.join("state_5.sqlite"));
+        let connection = db.and_then(|path| {
+            Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY).ok()
+        });
+        Self(connection)
+    }
+    fn get(&self, id: &str) -> Option<String> {
+        let connection = self.0.as_ref()?;
+        let mut query = connection
+            .prepare_cached("SELECT name FROM threads WHERE id = ?1")
+            .ok()?;
+        let title: Option<String> = query
+            .query_row(params![id], |row| row.get(0))
+            .optional()
+            .ok()?;
+        title.filter(|s| !s.trim().is_empty())
+    }
+}
 struct Journal {
     offset: u64,
     modified: SystemTime,
@@ -101,6 +127,7 @@ impl Monitor {
         let mut seen = HashSet::new();
         for (&harness, root) in &settings.roots {
             let root = Path::new(root);
+            let codex_titles = (harness == Harness::Codex).then(|| CodexTitles::open(root));
             let mut health = AdapterHealth {
                 harness,
                 root: root.to_string_lossy().into_owned(),
@@ -169,6 +196,12 @@ impl Monitor {
                 let mut session = journal.session.clone();
                 if session.raw_id.is_empty() || session.excluded {
                     continue;
+                }
+                if let Some(title) = codex_titles
+                    .as_ref()
+                    .and_then(|titles| titles.get(&session.raw_id))
+                {
+                    session.set_title(&title);
                 }
                 if harness == Harness::Omp {
                     // OMP child journals live in the parent's companion artifact directory.
@@ -441,6 +474,59 @@ fn repository(cwd: &str) -> (String, String) {
 mod tests {
     use super::*;
     use std::io::Write;
+    #[test]
+    fn codex_display_name_follows_renames_and_falls_back_to_journal() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().join("sessions");
+        fs::create_dir(&root).unwrap();
+        let db = Connection::open(dir.path().join("state_5.sqlite")).unwrap();
+        db.execute_batch("CREATE TABLE threads (id TEXT PRIMARY KEY, name TEXT)")
+            .unwrap();
+        db.execute(
+            "INSERT INTO threads (id, name) VALUES (?1, ?2)",
+            params!["codex-123", "Build AgentEmpires session map"],
+        )
+        .unwrap();
+        let journal = root.join("rollout.jsonl");
+        fs::write(
+            &journal,
+            format!(
+                "{{\"type\":\"session_meta\",\"payload\":{{\"id\":\"codex-123\",\"cwd\":\"{}\"}}}}\n{{\"type\":\"event_msg\",\"timestamp\":{},\"payload\":{{\"type\":\"user_message\",\"message\":\"lets build a new public repo in github called AgentEmpires\"}}}}\n",
+                dir.path().display(),
+                now()
+            ),
+        )
+        .unwrap();
+        let settings = Settings {
+            roots: [(Harness::Codex, root.to_string_lossy().into_owned())].into(),
+            history_hours: 24,
+        };
+        let mut monitor = Monitor::new();
+        let first = monitor.scan(&settings);
+        assert_eq!(first.sessions[0].title, "Build AgentEmpires session map");
+        assert_eq!(
+            first.sessions[0].task.as_deref(),
+            Some("build a new public repo in github called AgentEmpires")
+        );
+        db.execute(
+            "UPDATE threads SET name = ?1 WHERE id = ?2",
+            params!["Renamed in Codex", "codex-123"],
+        )
+        .unwrap();
+        assert_eq!(
+            monitor.scan(&settings).sessions[0].title,
+            "Renamed in Codex"
+        );
+        db.execute(
+            "UPDATE threads SET name = NULL WHERE id = ?1",
+            params!["codex-123"],
+        )
+        .unwrap();
+        assert_eq!(
+            monitor.scan(&settings).sessions[0].title,
+            "build a new public repo in github called AgentEmpires"
+        );
+    }
     #[test]
     fn partial_records_append_and_truncation() {
         let dir = tempfile::tempdir().unwrap();
