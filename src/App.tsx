@@ -12,6 +12,7 @@ import {
   Layers,
   Maximize2,
   Monitor,
+  Move,
   Radio,
   Search,
   Settings2,
@@ -163,20 +164,29 @@ export default function App() {
         className={`companion ${paused ? 'paused' : ''}`}
         onDoubleClick={() => void toggleView(false)}
       >
-        <div className="companion-tools">
-          <button
-            aria-label="Move companion"
-            title="Drag companion"
-            onPointerDown={() => {
-              if (native) void getCurrentWindow().startDragging();
-            }}
-          >
-            <Layers size={14} />
+        <div
+          className="companion-tools"
+          title={native ? 'Drag to move the companion' : 'Desktop companion preview'}
+          onPointerDown={() => {
+            if (native) {
+              void getCurrentWindow()
+                .startDragging()
+                .catch((e) => setError(`Cannot move companion: ${String(e)}`));
+            }
+          }}
+        >
+          <button aria-label="Move companion" title="Drag this bar to move the companion">
+            <Move size={14} />
+            <span>DRAG</span>
           </button>
           <span title={current?.title}>
             {current?.title ?? (demo ? 'DEMO WORLD' : 'YOUR LITTLE EMPIRE')}
           </span>
-          <button aria-label="Expand world" onClick={() => void toggleView(false)}>
+          <button
+            aria-label="Expand world"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => void toggleView(false)}
+          >
             <Maximize2 size={14} />
           </button>
         </div>

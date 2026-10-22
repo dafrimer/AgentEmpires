@@ -60,6 +60,7 @@ test('desktop IPC uses live data, saves roots, and reveals only a selected sessi
     host.isTauri = true;
     host.ipcCalls = [];
     host.__TAURI_INTERNALS__ = {
+      metadata: { currentWindow: { label: 'buddy' } },
       invoke: async (cmd: string, args: Record<string, unknown>) => {
         host.ipcCalls.push({ cmd, args });
         if (cmd === 'get_snapshot')
@@ -129,6 +130,16 @@ test('desktop IPC uses live data, saves roots, and reveals only a selected sessi
   expect(calls.find((c) => c.cmd === 'save_settings')).toMatchObject({
     args: { settings: { roots: { omp: '/custom/omp' } } },
   });
+  await page.goto('/?buddy=1');
+  await expect(page.locator('.companion-tools')).toBeVisible();
+  await page.getByRole('button', { name: 'Move companion' }).click();
+  const dragCalls = await page.evaluate(
+    () => (window as unknown as { ipcCalls: { cmd: string; args: unknown }[] }).ipcCalls,
+  );
+  expect(dragCalls).toContainEqual({
+    cmd: 'plugin:window|start_dragging',
+    args: { label: 'buddy' },
+  });
 });
 test('narrow viewport stays usable without horizontal overflow', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -179,6 +190,31 @@ test('working villagers make a round trip and carry resources home', async ({ pa
   expect(samples[2].x).toBeLessThan(samples[1].x);
   expect(samples[2].carrying).toBe('1');
   expect(Math.abs(samples[3].x)).toBeLessThan(2);
+  await expect(route.locator('.route-return .pose-secondary')).toHaveCount(1);
+  await expect(route.locator('.route-return .carried-supplies')).toHaveCount(1);
+});
+
+test('idle villagers walk short rounds instead of standing still', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/');
+  const villager = page.locator('[data-session="demo-5"] .idle-route').first();
+  await expect(villager).toBeVisible();
+  await expect(villager.locator('.route-outbound .pose-secondary')).toHaveCount(1);
+  await expect(villager.locator('.route-return .pose-secondary')).toHaveCount(1);
+  const samples = await villager.evaluate((element) => {
+    const animation = element
+      .getAnimations()
+      .find((item) => (item as CSSAnimation).animationName === 'idle-route')!;
+    animation.pause();
+    const timing = animation.effect!.getTiming();
+    return [0.05, 0.45, 0.95].map((progress) => {
+      animation.currentTime = progress * Number(timing.duration) - Number(timing.delay);
+      return new DOMMatrixReadOnly(getComputedStyle(element).transform).m41;
+    });
+  });
+  expect(Math.abs(samples[0])).toBeLessThan(2);
+  expect(samples[1]).toBeGreaterThan(15);
+  expect(Math.abs(samples[2])).toBeLessThan(2);
 });
 
 test('other tool calls use a separate animated workbench', async ({ page }) => {

@@ -11,10 +11,10 @@ AgentEmpires turns local **Codex, Claude Code, GitHub Copilot CLI, and Oh My Pi*
 - One settlement per local CLI session, with a distinct banner color for each harness.
 - Workers represent observed agents and subagents. The inspector preserves known parent relationships.
 - Related repositories attract neighboring tiles. Shared file activity creates stronger connections. Git worktrees share a repository identity.
-- A transparent, always-on-top desktop companion expands to the full map on double-click. The tray/menu-bar menu brings either view back.
+- A transparent, always-on-top desktop companion can be moved by dragging its top bar. It keeps its position when switching views and expands to the full map on double-click. The tray/menu-bar menu brings either view back.
 - Search, harness filters, active-only view, pan, zoom, activity bubbles, and a local chronicle.
 - Hover over a worker to see that individual agent's current activity. Demo mode and selection stay in sync between the map and companion.
-- Gathering and planning send villagers from the hall to a farm or forest and back with supplies. Editing, shell commands, and tests use hammer poses; waiting and finished agents stay in place.
+- Gathering and planning send villagers from the hall to a farm or forest and back with supplies. Their walking and return trips use alternating foot poses. Idle and completed villagers make quiet rounds within the settlement; editing, shell commands, and tests use hammer poses, while waiting agents stay in place.
 - Other observed tool calls use a four-pose workshop animation. Their activity bubbles retain the tool name without revealing its arguments.
 - Construction grows with observed activity; it is decorative and **does not claim a percentage of task completion**.
 - Reveal the original journal in Finder/Explorer, or copy a resume command for your terminal.

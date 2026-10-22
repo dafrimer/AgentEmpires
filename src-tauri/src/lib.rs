@@ -5,7 +5,10 @@ pub mod monitor;
 use model::{Settings, Snapshot};
 use std::{
     path::PathBuf,
-    sync::{Arc, Mutex},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Mutex,
+    },
 };
 use tauri::{
     menu::{Menu, MenuItem},
@@ -17,6 +20,7 @@ struct AppState {
     snapshot: Arc<Mutex<Snapshot>>,
     settings: Arc<Mutex<Settings>>,
     settings_path: PathBuf,
+    companion_positioned: AtomicBool,
 }
 #[tauri::command]
 fn get_snapshot(state: State<AppState>) -> Result<Snapshot, String> {
@@ -95,16 +99,22 @@ fn switch_view(app: &tauri::AppHandle, compact: bool) -> Result<(), String> {
         .get_webview_window("buddy")
         .ok_or("Companion unavailable")?;
     if compact {
-        if let Ok(Some(monitor)) = main.current_monitor() {
-            let size = monitor.size();
-            let pos = monitor.position();
-            let scale = monitor.scale_factor();
-            buddy
-                .set_position(tauri::PhysicalPosition::new(
-                    pos.x + (size.width as f64 - 370. * scale) as i32,
-                    pos.y + (size.height as f64 - 350. * scale) as i32,
-                ))
-                .map_err(|e| e.to_string())?;
+        // Place the companion once. Its native window retains a dragged position
+        // while hidden, including when the user switches back to the full map.
+        let state = app.state::<AppState>();
+        if !state.companion_positioned.load(Ordering::Acquire) {
+            if let Ok(Some(monitor)) = main.current_monitor() {
+                let size = monitor.size();
+                let pos = monitor.position();
+                let scale = monitor.scale_factor();
+                buddy
+                    .set_position(tauri::PhysicalPosition::new(
+                        pos.x + (size.width as f64 - 370. * scale) as i32,
+                        pos.y + (size.height as f64 - 350. * scale) as i32,
+                    ))
+                    .map_err(|e| e.to_string())?;
+            }
+            state.companion_positioned.store(true, Ordering::Release);
         }
         buddy.show().map_err(|e| e.to_string())?;
         main.hide().map_err(|e| e.to_string())?;
@@ -145,6 +155,7 @@ pub fn run() {
                 snapshot: snapshot.clone(),
                 settings: settings.clone(),
                 settings_path: path,
+                companion_positioned: AtomicBool::new(false),
             });
             std::thread::spawn(move || {
                 let mut monitor = monitor::Monitor::new();
@@ -187,6 +198,7 @@ pub fn run() {
                 let handle = app.handle().clone();
                 std::thread::spawn(move || {
                     std::thread::sleep(std::time::Duration::from_secs(2));
+                    let (send, receive) = std::sync::mpsc::sync_channel(1);
                     let app = handle.clone();
                     let _ = handle.run_on_main_thread(move || {
                         let result = switch_view(&app, true).and_then(|_| {
@@ -198,12 +210,48 @@ pub fn run() {
                             {
                                 return Err("Companion visibility failed".into());
                             }
+                            let original = buddy.outer_position().map_err(|e| e.to_string())?;
+                            let moved =
+                                tauri::PhysicalPosition::new(original.x - 40, original.y - 40);
+                            buddy.set_position(moved).map_err(|e| e.to_string())?;
+                            Ok(moved)
+                        });
+                        let _ = send.send(result);
+                    });
+                    let first = receive
+                        .recv_timeout(std::time::Duration::from_secs(5))
+                        .unwrap_or_else(|_| Err("Companion move timed out".into()));
+                    // Native move events complete on the main event loop. Give the OS
+                    // one turn before checking the retained position.
+                    std::thread::sleep(std::time::Duration::from_millis(350));
+                    let app = handle.clone();
+                    let _ = handle.run_on_main_thread(move || {
+                        let result = first.and_then(|moved| {
+                            let main = app.get_webview_window("main").ok_or("Missing map")?;
+                            let buddy =
+                                app.get_webview_window("buddy").ok_or("Missing companion")?;
+                            let actual = buddy.outer_position().map_err(|e| e.to_string())?;
+                            if actual != moved {
+                                return Err(format!(
+                                    "Companion move failed: expected ({}, {}), got ({}, {})",
+                                    moved.x, moved.y, actual.x, actual.y
+                                ));
+                            }
                             switch_view(&app, false)?;
                             if !main.is_visible().map_err(|e| e.to_string())?
                                 || buddy.is_visible().map_err(|e| e.to_string())?
                             {
                                 return Err("Map visibility failed".into());
                             }
+                            switch_view(&app, true)?;
+                            let restored = buddy.outer_position().map_err(|e| e.to_string())?;
+                            if restored != moved {
+                                return Err(format!(
+                                    "Companion position was reset: expected ({}, {}), got ({}, {})",
+                                    moved.x, moved.y, restored.x, restored.y
+                                ));
+                            }
+                            switch_view(&app, false)?;
                             Ok(())
                         });
                         if let Err(error) = &result {

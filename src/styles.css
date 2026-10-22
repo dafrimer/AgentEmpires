@@ -1144,10 +1144,20 @@ footer button {
   padding: 6px 9px;
   position: relative;
   z-index: 2;
+  cursor: grab;
+  touch-action: none;
+}
+.companion-tools:active {
+  cursor: grabbing;
 }
 .companion-tools button {
   padding: 0;
   display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.companion-tools button:last-child {
+  cursor: pointer;
 }
 .companion-tools > span {
   overflow: hidden;
@@ -1236,6 +1246,10 @@ html:has(.companion),
   animation: resource-route var(--route-duration) ease-in-out infinite;
   animation-delay: var(--route-delay);
 }
+.idle-route {
+  animation: idle-route var(--route-duration) ease-in-out infinite;
+  animation-delay: var(--route-delay);
+}
 .route-outbound,
 .route-harvest,
 .route-return {
@@ -1255,8 +1269,23 @@ html:has(.companion),
   opacity: 0;
   animation-name: route-return;
 }
-.route-return svg {
-  animation: carry-step 0.6s steps(1, end) infinite;
+.walking .pose-primary,
+.walking .pose-secondary,
+.walk-body,
+.walking .foot-shadow {
+  animation-duration: 0.48s;
+}
+.walk-body {
+  animation-name: grounded-step;
+  animation-timing-function: steps(2, end);
+  animation-iteration-count: infinite;
+  animation-delay: var(--pose-delay);
+}
+.walking .foot-shadow {
+  animation-name: shadow-step;
+  animation-timing-function: steps(2, end);
+  animation-iteration-count: infinite;
+  animation-delay: var(--pose-delay);
 }
 .face-left {
   transform: scaleX(-1);
@@ -1311,6 +1340,20 @@ html:has(.companion),
     transform: translate(0, 0);
   }
 }
+@keyframes idle-route {
+  0%,
+  9%,
+  100% {
+    transform: translate(0, 0);
+  }
+  38%,
+  54% {
+    transform: translate(var(--route-x), var(--route-y));
+  }
+  90% {
+    transform: translate(0, 0);
+  }
+}
 @keyframes route-outbound {
   0%,
   37% {
@@ -1345,13 +1388,24 @@ html:has(.companion),
     opacity: 1;
   }
 }
-@keyframes carry-step {
+@keyframes grounded-step {
   0%,
   100% {
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-1px);
+    transform: translateY(-1.5px);
+  }
+}
+@keyframes shadow-step {
+  0%,
+  100% {
+    transform: scaleX(1);
+    opacity: 0.45;
+  }
+  50% {
+    transform: scaleX(0.8);
+    opacity: 0.34;
   }
 }
 @keyframes tool-frame-cycle {
@@ -1411,6 +1465,10 @@ html:has(.companion),
   .tool-frame-2,
   .tool-frame-3 {
     opacity: 0;
+  }
+  .walk-body,
+  .foot-shadow {
+    transform: none;
   }
 }
 @media (max-width: 1200px) {

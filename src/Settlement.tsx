@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import type { CSSProperties } from 'react';
-import type { Session } from './types';
+import type { Session, Status } from './types';
 import { HARNESSES } from './types';
 
 const HEX = 'M0-79 110-39 110 39 0 79-110 39-110-39Z';
@@ -80,13 +80,35 @@ function ToolPose({ frame }: { frame: number }) {
   );
 }
 
+function WalkingPose({
+  faceLeft = false,
+  carrying = false,
+}: {
+  faceLeft?: boolean;
+  carrying?: boolean;
+}) {
+  return (
+    <g className={faceLeft ? 'face-left' : ''}>
+      <g className="walk-body">
+        <Pose frame={1} className="pose-primary" />
+        <Pose frame={2} className="pose-secondary" />
+        {carrying && (
+          <g className="carried-supplies" transform="translate(5 -16)" pointerEvents="none">
+            <ellipse rx="8" ry="4" fill="#745334" stroke="#cfac73" strokeWidth="1" />
+            <path d="M-5-2 4 2M-2-3 7 1" stroke="#dec28c" strokeWidth="1" />
+          </g>
+        )}
+      </g>
+    </g>
+  );
+}
+
 function Worker({
   x,
   y,
   color,
   index,
-  working,
-  waiting,
+  status,
   name,
   activity,
 }: {
@@ -94,11 +116,14 @@ function Worker({
   y: number;
   color: string;
   index: number;
-  working: boolean;
-  waiting: boolean;
+  status: Status;
   name: string;
   activity: string;
 }) {
+  const working = status === 'working';
+  const waiting = status === 'waiting';
+  // Idle villagers make quiet rounds; this is world ambience, not claimed agent work.
+  const patrolling = status === 'idle' || status === 'complete';
   // Shell and test execution also count as construction on the board. The
   // activity bubble keeps the more precise label from the journal adapter.
   const toolUse =
@@ -110,6 +135,7 @@ function Worker({
       activity,
     );
   const harvesting = working && !building && !toolUse;
+  const traveling = harvesting || patrolling;
   // These are visible routes on the board: the front of the hall to the farm or forest.
   // Each villager has a slightly different doorway and departure time, so several agents
   // can move at once without occupying exactly the same point.
@@ -125,8 +151,22 @@ function Worker({
   ];
   const [originX, originY] = harvesting ? doorways[index] : [x, y];
   const forestTrip = index % 2 === 1;
-  const [destinationX, destinationY] = forestTrip ? [-75, 13] : [72, 30];
-  const routeDuration = `${8.5 + (index % 3)}s`;
+  const patrolStops = [
+    [53, 43],
+    [-52, 34],
+    [25, 53],
+    [49, 23],
+    [-51, 25],
+    [42, 45],
+    [-22, 50],
+    [52, -10],
+  ];
+  const [destinationX, destinationY] = patrolling
+    ? patrolStops[index]
+    : forestTrip
+      ? [-75, 13]
+      : [72, 30];
+  const routeDuration = `${patrolling ? 7.5 + (index % 3) : 8.5 + (index % 3)}s`;
   const routeDelay = `-${index * 1.9}s`;
   const routeStyle = {
     '--route-x': `${destinationX - originX}px`,
@@ -138,11 +178,18 @@ function Worker({
   return (
     <g transform={`translate(${originX} ${originY})`}>
       <g
-        className={`worker ${harvesting ? 'resource-route' : ''} ${toolUse ? 'tool-action' : ''}`}
+        className={`worker ${harvesting ? 'resource-route' : ''} ${patrolling ? 'idle-route' : ''} ${traveling ? 'walking' : ''} ${toolUse ? 'tool-action' : ''}`}
         style={routeStyle}
       >
         <title>{`${name}: ${activity}`}</title>
-        <ellipse cy="3" rx={toolUse ? 22 : 7} ry={toolUse ? 5 : 2.8} fill="#152819" opacity=".45" />
+        <ellipse
+          className="foot-shadow"
+          cy="3"
+          rx={toolUse ? 22 : 7}
+          ry={toolUse ? 5 : 2.8}
+          fill="#152819"
+          opacity=".45"
+        />
         <ellipse
           cy="3"
           rx={toolUse ? 22 : 7}
@@ -158,17 +205,16 @@ function Worker({
               <ToolPose key={frame} frame={frame} />
             ))}
           </>
-        ) : harvesting ? (
+        ) : traveling ? (
           <>
-            <g className={`route-outbound ${forestTrip ? 'face-left' : ''}`}>
-              <Pose frame={1} className="pose-primary" />
-              <Pose frame={3} className="pose-secondary" />
+            <g className="route-outbound">
+              <WalkingPose faceLeft={destinationX < originX} />
             </g>
             <g className="route-harvest">
-              <Pose frame={forestTrip ? 6 : 7} />
+              <Pose frame={patrolling ? 0 : forestTrip ? 6 : 7} />
             </g>
-            <g className={`route-return ${forestTrip ? '' : 'face-left'}`}>
-              <Pose frame={forestTrip ? 6 : 7} />
+            <g className="route-return">
+              <WalkingPose faceLeft={destinationX > originX} carrying={harvesting} />
             </g>
           </>
         ) : (
@@ -310,8 +356,7 @@ export default function Settlement({
           y={positions[i][1]}
           color={h.color}
           index={i}
-          working={a.status === 'working'}
-          waiting={a.status === 'waiting'}
+          status={a.status}
           name={a.name}
           activity={a.activity}
         />
