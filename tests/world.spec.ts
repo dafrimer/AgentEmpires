@@ -48,6 +48,31 @@ test('world, selection, filters, companion and connection settings', async ({ pa
   expect(errors).toEqual([]);
 });
 
+test('companion follows busiest work and arrows pin a settlement until AUTO is pressed', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Desktop companion' }).click();
+  const title = page.locator('.companion-tools > span');
+  const auto = page.getByRole('button', { name: 'Auto select busiest settlement' });
+  await expect(title).toHaveText('Cartographer');
+  await expect(auto).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Next settlement' }).click();
+  await expect(title).toHaveText('The watchtower');
+  await expect(auto).toHaveAttribute('aria-pressed', 'false');
+  await page.getByRole('button', { name: 'Next settlement' }).click();
+  await expect(title).toHaveText('A new trading post');
+  await page.getByRole('button', { name: 'Previous settlement' }).click();
+  await expect(title).toHaveText('The watchtower');
+  await page.reload();
+  await page.getByRole('button', { name: 'Desktop companion' }).click();
+  await expect(title).toHaveText('The watchtower');
+  await auto.click();
+  await expect(title).toHaveText('Cartographer');
+  await expect(auto).toHaveAttribute('aria-pressed', 'true');
+  await page.screenshot({ path: 'test-results/companion.png' });
+});
+
 test('desktop IPC uses live data, saves roots, and reveals only a selected session ID', async ({
   page,
 }) => {

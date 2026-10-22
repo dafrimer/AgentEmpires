@@ -3,7 +3,9 @@ import { invoke, isTauri } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import {
   ArrowUpRight,
+  ChevronDown,
   ChevronRight,
+  ChevronUp,
   Copy,
   Crown,
   ExternalLink,
@@ -28,7 +30,14 @@ import {
 } from 'lucide-react';
 import type { Harness, Session, Settings, Snapshot } from './types';
 import { HARNESSES, STATUS_LABEL } from './types';
-import { age, agentDepth, resumeCommand, settlersOnMap, sharedFiles } from './world';
+import {
+  age,
+  agentDepth,
+  busiestSession,
+  resumeCommand,
+  settlersOnMap,
+  sharedFiles,
+} from './world';
 import { demoSnapshot } from './demo';
 import WorldMap from './WorldMap';
 import Settlement from './Settlement';
@@ -36,6 +45,7 @@ import Settlement from './Settlement';
 const native = isTauri();
 const empty: Snapshot = { sessions: [], adapters: [], scannedAt: 0, scanning: true };
 const harnessKeys = Object.keys(HARNESSES) as Harness[];
+type SelectionMode = 'auto' | 'manual';
 function Logo() {
   return (
     <span className="brand-symbol">
@@ -49,6 +59,9 @@ export default function App() {
   const [snapshot, setSnapshot] = useState<Snapshot>(() => (native ? empty : demoSnapshot()));
   const [selected, setSelected] = useState<string | null>(() =>
     localStorage.getItem('ae-selected'),
+  );
+  const [selectionMode, setSelectionMode] = useState<SelectionMode>(() =>
+    localStorage.getItem('ae-selection-mode') === 'manual' ? 'manual' : 'auto',
   );
   const [filter, setFilter] = useState<Harness | null>(null);
   const [query, setQuery] = useState('');
@@ -94,6 +107,8 @@ export default function App() {
   useEffect(() => {
     const sync = (e: StorageEvent) => {
       if (e.key === 'ae-selected') setSelected(e.newValue);
+      if (e.key === 'ae-selection-mode')
+        setSelectionMode(e.newValue === 'manual' ? 'manual' : 'auto');
       if (e.key === 'ae-paused') setPaused(e.newValue === 'true');
       if (e.key === 'ae-demo') {
         setSnapshot(empty);
@@ -119,7 +134,8 @@ export default function App() {
       (!activeOnly || s.agents.some((a) => a.status === 'working' || a.status === 'waiting')) &&
       `${s.title} ${s.task ?? ''} ${s.repoName}`.toLowerCase().includes(query.toLowerCase()),
   );
-  const current = sessions.find((s) => s.id === selected) ?? sessions[0];
+  const pinned = selectionMode === 'manual' ? sessions.find((s) => s.id === selected) : undefined;
+  const current = pinned ?? busiestSession(sessions);
   const currentPresent = current ? settlersOnMap(current) : [];
   const currentPresentIds = new Set(currentPresent.map((agent) => agent.id));
   const workers = snapshot.sessions.reduce((n, s) => n + settlersOnMap(s).length, 0);
@@ -145,8 +161,21 @@ export default function App() {
   };
   const choose = (id: string) => {
     setSelected(id);
+    setSelectionMode('manual');
     localStorage.setItem('ae-selected', id);
+    localStorage.setItem('ae-selection-mode', 'manual');
     setShowCommand(false);
+  };
+  const chooseAutomatically = () => {
+    setSelected(null);
+    setSelectionMode('auto');
+    localStorage.removeItem('ae-selected');
+    localStorage.setItem('ae-selection-mode', 'auto');
+  };
+  const cycleCompanion = (direction: -1 | 1) => {
+    if (sessions.length < 2) return;
+    const index = sessions.findIndex((session) => session.id === current?.id);
+    choose(sessions[(index + direction + sessions.length) % sessions.length].id);
   };
   const openSource = async (s: Session) => {
     if (demo) {
@@ -185,13 +214,40 @@ export default function App() {
           <span title={current?.title}>
             {current?.title ?? (demo ? 'DEMO WORLD' : 'YOUR LITTLE EMPIRE')}
           </span>
-          <button
-            aria-label="Expand world"
+          <div
+            className="companion-selection"
             onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => void toggleView(false)}
+            onDoubleClick={(e) => e.stopPropagation()}
           >
-            <Maximize2 size={14} />
-          </button>
+            <button
+              className={!pinned ? 'is-auto' : ''}
+              aria-label="Auto select busiest settlement"
+              aria-pressed={!pinned}
+              title="Follow the busiest settlement"
+              onClick={chooseAutomatically}
+            >
+              AUTO
+            </button>
+            <button
+              aria-label="Previous settlement"
+              title="Previous settlement"
+              disabled={sessions.length < 2}
+              onClick={() => cycleCompanion(-1)}
+            >
+              <ChevronUp size={14} />
+            </button>
+            <button
+              aria-label="Next settlement"
+              title="Next settlement"
+              disabled={sessions.length < 2}
+              onClick={() => cycleCompanion(1)}
+            >
+              <ChevronDown size={14} />
+            </button>
+            <button aria-label="Expand world" onClick={() => void toggleView(false)}>
+              <Maximize2 size={14} />
+            </button>
+          </div>
         </div>
         {current ? (
           <>

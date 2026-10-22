@@ -1163,10 +1163,39 @@ footer button {
   cursor: pointer;
 }
 .companion-tools > span {
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+}
+.companion-selection {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.companion-selection button {
+  width: 19px;
+  height: 19px;
+  justify-content: center;
+  border-radius: 4px;
+  color: #a9bd9a;
+  cursor: pointer;
+}
+.companion-selection button:first-child {
+  width: auto;
+  padding: 0 4px;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+}
+.companion-selection button.is-auto {
+  background: #a5bd8b30;
+  color: #d6e6c3;
+}
+.companion-selection button:disabled {
+  cursor: default;
 }
 .companion-world {
   width: 280px;

@@ -7,6 +7,7 @@ import {
   resumeCommand,
   agentDepth,
   settlersOnMap,
+  busiestSession,
 } from './world';
 import { demoSnapshot } from './demo';
 describe('world placement', () => {
@@ -57,5 +58,22 @@ describe('settler presence', () => {
       false,
     );
     expect(session.agents).toContain(finished);
+  });
+});
+describe('companion selection', () => {
+  it('follows the most active observed settlement and ignores finished workers', () => {
+    const now = Date.now();
+    const [recent, busy] = demoSnapshot().sessions;
+    for (const agent of recent.agents.slice(1)) {
+      agent.status = 'complete';
+      agent.updatedAt = now - 20_000;
+    }
+    expect(busiestSession([recent, busy], now)?.id).toBe(busy.id);
+    for (const agent of busy.agents.slice(1)) {
+      agent.status = 'complete';
+      agent.updatedAt = now - 20_000;
+    }
+    expect(busiestSession([busy, recent], now)?.id).toBe(recent.id);
+    expect(busiestSession([])).toBeUndefined();
   });
 });

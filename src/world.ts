@@ -7,6 +7,26 @@ export function settlersOnMap(session: Session, now = Date.now()): Agent[] {
     return true;
   });
 }
+export function busiestSession(sessions: Session[], now = Date.now()): Session | undefined {
+  const score = (session: Session) => {
+    const agents = settlersOnMap(session, now);
+    return [
+      agents.filter((agent) => agent.status === 'working').length,
+      session.timeline.filter((event) => event.at >= now - 60_000).length,
+      agents.filter((agent) => agent.status === 'waiting').length,
+      session.lastActivity,
+    ];
+  };
+  return sessions.reduce<Session | undefined>((best, candidate) => {
+    if (!best) return candidate;
+    const a = score(candidate);
+    const b = score(best);
+    for (let i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return a[i] > b[i] ? candidate : best;
+    }
+    return candidate.id < best.id ? candidate : best;
+  }, undefined);
+}
 export type Cell = { q: number; r: number };
 const directions = [
   { q: 1, r: 0 },

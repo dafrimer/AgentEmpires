@@ -45,7 +45,7 @@ SVG houses, trees, people, paths, terrain, flags, and smoke are authored in sour
 
 ## Desktop shell
 
-Two webviews share one Rust monitor. The main window shows the full map. The companion is a transparent, frameless, always-on-top window with a drag handle. Closing the main window shows the companion; Quit lives in the system tray/menu-bar menu. No launch-at-login changes are made automatically.
+Two webviews share one Rust monitor. The main window shows the full map. The companion is a transparent, frameless, always-on-top window with a drag handle. With no manual selection it shows the settlement with the most working agents, then the most activity in the last minute, then waiting agents and recency. Its arrows cycle through observed sessions and pin one until AUTO is pressed; the selection is synchronized between windows. Closing the main window shows the companion; Quit lives in the system tray/menu-bar menu. No launch-at-login changes are made automatically.
 
 Source navigation resolves a session ID against the latest snapshot and passes its path as an OS command argument, never shell-interpolated text. Resume commands are quoted separately for POSIX and PowerShell, displayed/copied only, and do not run automatically.
 
