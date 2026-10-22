@@ -44,7 +44,21 @@ fn main() {
         println!("Backlog still being read; run the desktop monitor to continue.");
     }
     if let Some(id) = std::env::args().nth(1) {
-        let found = snapshot.sessions.iter().any(|s| s.raw_id == id);
-        println!("Requested top-level session present: {found}");
+        let requested = snapshot.sessions.iter().find(|s| s.raw_id == id);
+        println!(
+            "Requested top-level session present: {}",
+            requested.is_some()
+        );
+        if let Some(session) = requested {
+            println!(
+                "Observed agents: {} ({} linked subagents)",
+                session.agents.len(),
+                session
+                    .agents
+                    .iter()
+                    .filter(|a| a.parent_id.is_some())
+                    .count()
+            );
+        }
     }
 }

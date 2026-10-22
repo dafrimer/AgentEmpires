@@ -1,5 +1,5 @@
 //! Read-only, best-effort adapters for local journals. Never run harness tools.
-use crate::model::{Harness, Session, Status};
+use crate::model::{Harness, PendingTool, Session, Status};
 use serde_json::Value;
 
 fn s<'a>(v: &'a Value, key: &str) -> &'a str {
@@ -59,6 +59,9 @@ fn classify(name: &str, args: &Value) -> (&'static str, &'static str) {
     }
     if name.contains("test") {
         return ("testing", "Running tests");
+    }
+    if name == "exec" {
+        return ("tool", "Using a tool");
     }
     if name.contains("bash")
         || name.contains("shell")
@@ -216,21 +219,30 @@ fn codex(out: &mut Session, v: &Value, at: i64) {
                     at,
                 );
             }
-            "task_started" => out.record(
-                None,
-                Status::Working,
-                "Planning the next move".into(),
-                "thinking",
-                at,
-            ),
-            "task_complete" | "task_completed" => out.record(
-                None,
-                Status::Idle,
-                "Turn finished · resting by the fire".into(),
-                "idle",
-                at,
-            ),
-            "turn_aborted" => out.record(None, Status::Idle, "Turn interrupted".into(), "idle", at),
+            "task_started" => {
+                out.pending_tools.clear();
+                out.record(
+                    None,
+                    Status::Working,
+                    "Planning the next move".into(),
+                    "thinking",
+                    at,
+                );
+            }
+            "task_complete" | "task_completed" => {
+                out.pending_tools.clear();
+                out.record(
+                    None,
+                    Status::Idle,
+                    "Turn finished · resting by the fire".into(),
+                    "idle",
+                    at,
+                );
+            }
+            "turn_aborted" => {
+                out.pending_tools.clear();
+                out.record(None, Status::Idle, "Turn interrupted".into(), "idle", at);
+            }
             "error" => out.record(
                 None,
                 Status::Error,
@@ -246,22 +258,71 @@ fn codex(out: &mut Session, v: &Value, at: i64) {
                     out.observe_user_text(text);
                 }
             }
-            "function_call" => tool(out, s(p, "name"), &p["arguments"], None, at),
+            "function_call" => {
+                tool(out, s(p, "name"), &p["arguments"], None, at);
+                remember_codex_tool(out, s(p, "call_id"), at);
+            }
             "custom_tool_call" => {
                 let args = serde_json::json!({"input":s(p,"input")});
                 tool(out, s(p, "name"), &args, None, at);
+                remember_codex_tool(out, s(p, "call_id"), at);
             }
-            "function_call_output" | "custom_tool_call_output" => out.record(
-                None,
-                Status::Working,
-                "Tool finished · planning next step".into(),
-                "thinking",
-                at,
-            ),
+            "function_call_output" | "custom_tool_call_output" => {
+                let call_id = s(p, "call_id");
+                if call_id.is_empty() {
+                    out.pending_tools.clear();
+                } else {
+                    out.pending_tools.remove(call_id);
+                }
+                if let Some(active) = out
+                    .pending_tools
+                    .values()
+                    .max_by_key(|tool| tool.at)
+                    .cloned()
+                {
+                    out.record(None, active.status, active.activity, &active.kind, at);
+                } else {
+                    out.record(
+                        None,
+                        Status::Working,
+                        "Reviewing tool result".into(),
+                        "thinking",
+                        at,
+                    );
+                }
+            }
             _ => {}
         },
         _ => {}
     }
+}
+fn remember_codex_tool(out: &mut Session, call_id: &str, at: i64) {
+    if call_id.is_empty() {
+        return;
+    }
+    if out.pending_tools.len() >= 128 {
+        if let Some(oldest) = out
+            .pending_tools
+            .iter()
+            .min_by_key(|(_, tool)| tool.at)
+            .map(|(id, _)| id.clone())
+        {
+            out.pending_tools.remove(&oldest);
+        }
+    }
+    out.pending_tools.insert(
+        call_id.into(),
+        PendingTool {
+            at,
+            status: out.status,
+            activity: out.activity.clone(),
+            kind: out
+                .timeline
+                .last()
+                .map(|event| event.kind.clone())
+                .unwrap_or_else(|| "tool".into()),
+        },
+    );
 }
 fn claude(out: &mut Session, v: &Value, at: i64) {
     if !s(v, "sessionId").is_empty() {
@@ -675,6 +736,36 @@ mod tests {
         );
         assert_eq!(out.timeline.last().unwrap().kind, "tool");
         assert_eq!(out.activity, "Using a tool · browser.open");
+    }
+    #[test]
+    fn codex_tool_results_keep_other_calls_active_then_show_review() {
+        let mut out = Session::new(Harness::Codex, "rollout.jsonl");
+        event(
+            &mut out,
+            json!({"type":"event_msg","payload":{"type":"task_started"}}),
+        );
+        event(
+            &mut out,
+            json!({"type":"response_item","payload":{"type":"custom_tool_call","call_id":"a","name":"exec","input":"private command"}}),
+        );
+        assert_eq!(out.activity, "Using a tool · exec");
+        event(
+            &mut out,
+            json!({"type":"response_item","payload":{"type":"function_call","call_id":"b","name":"read_file","arguments":"{}"}}),
+        );
+        event(
+            &mut out,
+            json!({"type":"response_item","payload":{"type":"custom_tool_call_output","call_id":"a","output":"private result"}}),
+        );
+        assert_eq!(out.activity, "Reading or searching files · read_file");
+        assert_eq!(out.pending_tools.len(), 1);
+        event(
+            &mut out,
+            json!({"type":"response_item","payload":{"type":"function_call_output","call_id":"b","output":"another private result"}}),
+        );
+        assert_eq!(out.activity, "Reviewing tool result");
+        assert!(out.pending_tools.is_empty());
+        assert!(!serde_json::to_string(&out).unwrap().contains("private"));
     }
     #[test]
     fn extracts_current_task_and_preserves_explicit_title() {

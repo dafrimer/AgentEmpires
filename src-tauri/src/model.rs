@@ -55,6 +55,13 @@ pub struct Activity {
     pub text: String,
     pub kind: String,
 }
+#[derive(Debug, Clone)]
+pub struct PendingTool {
+    pub at: i64,
+    pub status: Status,
+    pub activity: String,
+    pub kind: String,
+}
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Session {
@@ -75,6 +82,8 @@ pub struct Session {
     pub agents: Vec<Agent>,
     pub files: BTreeMap<String, i64>,
     pub timeline: Vec<Activity>,
+    #[serde(skip)]
+    pub pending_tools: BTreeMap<String, PendingTool>,
     #[serde(skip)]
     pub parent_session: Option<String>,
     #[serde(skip)]
@@ -102,6 +111,7 @@ impl Session {
             agents: vec![],
             files: BTreeMap::new(),
             timeline: vec![],
+            pending_tools: BTreeMap::new(),
             parent_session: None,
             excluded: false,
             title_is_set: false,

@@ -18,6 +18,7 @@ The Rust monitor owns file access. The frontend can request a snapshot, edit the
 - Retains at most 30 recent activity entries, 256 paths, and 128 directly observed agents per journal. Shared-file connections use explicit path arguments and patch headers from the last 30 minutes; shell commands are not parsed as file lists.
 - Repository grouping follows `.git` and worktree `commondir` files without executing repository commands. Repositories lacking a Git identity group by working directory. Separate clones with the same remote are not merged.
 - Status reflects recorded events. Working/waiting observations older than two minutes become stale. There is no PID-based guarantee of liveness.
+- Codex tool call IDs keep a still-running call visible when another call finishes. After the final result, the activity says the agent is reviewing that result; tool output is never copied into the snapshot.
 
 ## Adapter contracts and limitations
 
