@@ -491,9 +491,9 @@ mod tests {
         fs::write(
             &journal,
             format!(
-                "{{\"type\":\"session_meta\",\"payload\":{{\"id\":\"codex-123\",\"cwd\":\"{}\"}}}}\n{{\"type\":\"event_msg\",\"timestamp\":{},\"payload\":{{\"type\":\"user_message\",\"message\":\"lets build a new public repo in github called AgentEmpires\"}}}}\n",
-                dir.path().display(),
-                now()
+                "{}\n{}\n",
+                serde_json::json!({"type":"session_meta","payload":{"id":"codex-123","cwd":dir.path().to_string_lossy()}}),
+                serde_json::json!({"type":"event_msg","timestamp":now(),"payload":{"type":"user_message","message":"lets build a new public repo in github called AgentEmpires"}}),
             ),
         )
         .unwrap();
