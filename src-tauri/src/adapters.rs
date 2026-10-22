@@ -60,9 +60,6 @@ fn classify(name: &str, args: &Value) -> (&'static str, &'static str) {
     if name.contains("test") {
         return ("testing", "Running tests");
     }
-    if name == "exec" {
-        return ("tool", "Using a tool");
-    }
     if name.contains("bash")
         || name.contains("shell")
         || name.contains("exec")
@@ -748,7 +745,8 @@ mod tests {
             &mut out,
             json!({"type":"response_item","payload":{"type":"custom_tool_call","call_id":"a","name":"exec","input":"private command"}}),
         );
-        assert_eq!(out.activity, "Using a tool · exec");
+        assert_eq!(out.activity, "Running a command · exec");
+        assert_eq!(out.agents[0].kind, "working");
         event(
             &mut out,
             json!({"type":"response_item","payload":{"type":"function_call","call_id":"b","name":"read_file","arguments":"{}"}}),

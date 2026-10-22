@@ -9,14 +9,21 @@ AgentEmpires uses original generated raster artwork inspired by classic medieval
 - `paladin.png`: 1536 × 1024 RGBA; matching four-by-two poses for the lead agent, in blue cloth and steel armor.
 - `meadow.png`: 1254 × 1254 grass texture, clipped into each hex tile at runtime.
 - `tool-workbench.png`: 1254 × 1254 RGBA; four related poses of a villager working at a map and instrument table.
+- `resources.png`: 1774 × 887 RGBA; original two-cell quarry and granary atlas, generated with the built-in image tool on 2026-10-22.
 
 The originals are preserved without destructive cropping. The renderer uses atlas view boxes, a colored selection ring per villager, harness borders and banners, two-pose hammer/walk cycles, and carrying poses for gathering. Pause and reduced-motion preferences apply to animation. The small pose set is an initial art pass, not a full directional animation library. Buildings grow decoratively with event counts; workers still correspond to observed agents.
 
-Planning and reading follow a repeated, staggered round trip from the hall to the farm or forest. The outbound trip uses alternating walking frames, the villager pauses at the resource, and the return shows a basket or timber bundle. Editing, shell commands, and tests use the hammer poses. This is a visual metaphor for work observed in a local CLI journal; the route does not reveal private prompt content.
+Planning and reading follow a repeated, staggered round trip from the hall steps to the granary or quarry. The outbound trip uses alternating walking frames, the villager pauses at the visible resource, and the return carries grain or stone. The route is kept clear of cottages. Editing, shell commands, and tests use the hammer poses. The renderer uses the journal's activity kind, avoiding word matches such as "inspect" triggering construction. This is a visual metaphor for work observed in a local CLI journal; the route does not reveal private prompt content.
 
 Unclassified observed tool calls use the workbench poses, cycled in place. The four-frame animation pauses with the map and presents its first frame when reduced motion is requested.
 
 ## Generation prompts
+
+### Resource landmarks
+
+```text
+Use case: stylized-concept. Asset type: original production 2D isometric game sprite atlas for AgentEmpires desktop map. Create exactly TWO independent medieval strategy-game scenery sprites side by side in a 2-column atlas, each with fully transparent background and clear empty margins. LEFT: a low grey-stone quarry outcrop with several distinct angular mineable boulders, a small pickaxe leaning against rock, loose stone chips; no person. RIGHT: a compact timber-and-stone granary / grain store with an obvious open doorway, straw roof, two wheat sheaves and grain sacks by the entrance; no person. Both sprites have same orthographic 30-degree isometric camera, ground-contact baseline, upper-left natural light, realistic detailed painterly pre-rendered 2D sprite treatment, muted ochre, weathered timber and grey stone, crisp at thumbnail size; visually harmonious with classic medieval RTS buildings, entirely original design. Atlas must be a clean 2-column grid with no overlap, each sprite centered in its half and no object crossing the column boundary. Genuine alpha transparency all around and between objects; no ground platform, no characters, no writing, no labels, no grid, no watermark.
+```
 
 ### Tool workbench
 

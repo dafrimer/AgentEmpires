@@ -8,7 +8,7 @@ test('world, selection, filters, companion and connection settings', async ({ pa
   ).toBeVisible();
   await expect(page.locator('[data-session]')).toHaveCount(6);
   const worker = page.locator('[data-session="demo-0"] .worker').first();
-  await worker.locator('.worker-hit').hover();
+  await worker.locator('.worker-hit').hover({ position: { x: 20, y: 34 } });
   await expect(worker.locator('.worker-speech')).toBeVisible();
   await expect(worker.locator('.worker-speech')).toContainText('Editing routes.ts');
   await page.mouse.move(5, 5);
@@ -184,6 +184,9 @@ test('working villagers make a round trip and carry resources home', async ({ pa
   await expect(executing).not.toHaveClass(/resource-route/);
   const route = page.locator('[data-session="demo-2"] .resource-route').first();
   await expect(route).toBeVisible();
+  await expect(route).toHaveAttribute('data-resource', 'quarry');
+  await expect(page.locator('[data-session="demo-2"] .resource-site-quarry')).toHaveCount(1);
+  await expect(page.locator('[data-session="demo-2"] .resource-site-granary')).toHaveCount(1);
   const samples = await route.evaluate((worker) => {
     const animations = worker
       .getAnimations({ subtree: true })
@@ -209,14 +212,18 @@ test('working villagers make a round trip and carry resources home', async ({ pa
   });
   expect(Math.abs(samples[0].x)).toBeLessThan(2);
   expect(samples[0].outward).toBe('1');
-  expect(samples[1].x).toBeGreaterThan(65);
+  expect(samples[1].x).toBeLessThan(-65);
   expect(samples[1].harvest).toBe('1');
-  expect(samples[2].x).toBeGreaterThan(10);
-  expect(samples[2].x).toBeLessThan(samples[1].x);
+  expect(samples[2].x).toBeLessThan(-10);
+  expect(samples[2].x).toBeGreaterThan(samples[1].x);
   expect(samples[2].carrying).toBe('1');
   expect(Math.abs(samples[3].x)).toBeLessThan(2);
   await expect(route.locator('.route-return .pose-secondary')).toHaveCount(1);
-  await expect(route.locator('.route-return .carried-supplies')).toHaveCount(1);
+  await expect(route.locator('.route-return .carried-stone')).toHaveCount(1);
+  await expect(route.locator('.route-return .carried-supplies')).toHaveCount(0);
+  const planning = page.locator('[data-session="demo-3"] .resource-route').last();
+  await expect(planning).toHaveAttribute('data-resource', 'granary');
+  await expect(planning.locator('.route-return .carried-grain')).toHaveCount(1);
 });
 
 test('finished settlements rest and the lead has a distinct paladin sprite', async ({ page }) => {

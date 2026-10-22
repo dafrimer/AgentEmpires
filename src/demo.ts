@@ -56,9 +56,21 @@ export function demoSnapshot(tick = 0): Snapshot {
             ? activity
             : j === 2 && i === 4
               ? 'Using a tool · browser.open'
-              : j % 2
-                ? 'Editing project files · edit'
-                : 'Reading project files · read',
+              : j === 2 && i === 3
+                ? 'Planning inventory options'
+                : j % 2
+                  ? 'Editing project files · edit'
+                  : 'Reading project files · read',
+        kind:
+          j === 0
+            ? kind
+            : j === 2 && i === 4
+              ? 'tool'
+              : j === 2 && i === 3
+                ? 'thinking'
+                : j % 2
+                  ? 'building'
+                  : 'gathering',
         updatedAt: at,
       }));
       return {

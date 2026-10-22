@@ -45,6 +45,7 @@ pub struct Agent {
     pub name: String,
     pub status: Status,
     pub activity: String,
+    pub kind: String,
     pub updated_at: i64,
 }
 #[derive(Debug, Clone, Serialize)]
@@ -172,6 +173,7 @@ impl Session {
                 },
                 status,
                 activity: text.clone(),
+                kind: kind.into(),
                 updated_at: at,
             });
         }
@@ -179,6 +181,7 @@ impl Session {
             if at >= a.updated_at {
                 a.status = status;
                 a.activity = text.clone();
+                a.kind = kind.into();
                 a.updated_at = at;
             }
         }

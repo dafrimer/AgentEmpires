@@ -9,6 +9,7 @@ const ENVIRONMENT = '/art/environment.png';
 const VILLAGERS = '/art/villagers.png';
 const PALADIN = '/art/paladin.png';
 const TOOL_WORKBENCH = '/art/tool-workbench.png';
+const RESOURCES = '/art/resources.png';
 // Explicit atlas regions preserve transparent margins without preprocessing the source art.
 const REGIONS = {
   hall: [0, 0, 655, 610],
@@ -42,6 +43,34 @@ function Scenery({
       aria-hidden="true"
     >
       <image href={ENVIRONMENT} width="1254" height="1254" />
+    </svg>
+  );
+}
+
+function ResourceScenery({
+  kind,
+  x,
+  y,
+  width,
+}: {
+  kind: 'quarry' | 'granary';
+  x: number;
+  y: number;
+  width: number;
+}) {
+  return (
+    <svg
+      className={`resource-site resource-site-${kind}`}
+      x={x - width / 2}
+      y={y - width}
+      width={width}
+      height={width}
+      viewBox={`${kind === 'quarry' ? 0 : 887} 0 887 887`}
+      overflow="hidden"
+      pointerEvents="none"
+      aria-hidden="true"
+    >
+      <image href={RESOURCES} width="1774" height="887" />
     </svg>
   );
 }
@@ -92,11 +121,11 @@ function ToolPose({ frame }: { frame: number }) {
 
 function WalkingPose({
   faceLeft = false,
-  carrying = false,
+  carrying,
   lead = false,
 }: {
   faceLeft?: boolean;
-  carrying?: boolean;
+  carrying?: 'stone' | 'grain';
   lead?: boolean;
 }) {
   return (
@@ -104,10 +133,32 @@ function WalkingPose({
       <g className="walk-body">
         <Pose frame={1} className="pose-primary" lead={lead} />
         <Pose frame={2} className="pose-secondary" lead={lead} />
-        {carrying && (
-          <g className="carried-supplies" transform="translate(5 -16)" pointerEvents="none">
-            <ellipse rx="8" ry="4" fill="#745334" stroke="#cfac73" strokeWidth="1" />
-            <path d="M-5-2 4 2M-2-3 7 1" stroke="#dec28c" strokeWidth="1" />
+        {carrying === 'stone' && (
+          <g className="carried-stone" transform="translate(6 -16)" pointerEvents="none">
+            <path
+              d="m-7 2 2-7 6-2 6 4 2 6-6 3-8-1Z"
+              fill="#969589"
+              stroke="#4d5149"
+              strokeWidth="1"
+            />
+            <path
+              d="m-5-5 6-2 2 6-7 1M3-1l6 4-6 3"
+              fill="#c5bdab"
+              stroke="#777970"
+              strokeWidth=".6"
+            />
+          </g>
+        )}
+        {carrying === 'grain' && (
+          <g className="carried-grain" transform="translate(6 -16)" pointerEvents="none">
+            <path
+              d="M-5-4Q-7-1-6 4Q0 9 7 4Q8-1 5-4Z"
+              fill="#d2b78a"
+              stroke="#745937"
+              strokeWidth="1"
+            />
+            <path d="M-5-4Q0-2 5-4M-2-5l-1-8M1-5v-10M4-5l2-7" stroke="#d4ad53" strokeWidth="1.2" />
+            <path d="m-3-11-3-2m4 3 3-3m0 0-2-3m5 5 3-2" stroke="#e2c369" strokeWidth="1" />
           </g>
         )}
       </g>
@@ -123,6 +174,7 @@ function Worker({
   status,
   name,
   activity,
+  kind,
   lead,
   sessionStatus,
 }: {
@@ -133,6 +185,7 @@ function Worker({
   status: Status;
   name: string;
   activity: string;
+  kind?: string;
   lead: boolean;
   sessionStatus: Status;
 }) {
@@ -143,46 +196,50 @@ function Worker({
   const patrolling = status === 'idle' && sessionStatus === 'working' && !lead;
   // Shell and test execution also count as construction on the board. The
   // activity bubble keeps the more precise label from the journal adapter.
-  const toolUse =
-    working && (activity.startsWith('Using a tool ·') || activity.startsWith('Delegating work'));
+  const toolUse = working && (kind === 'tool' || (!kind && activity.startsWith('Using a tool ·')));
+  const delegating =
+    working && (kind === 'delegating' || (!kind && activity.startsWith('Delegating work')));
   const building =
     working &&
     !toolUse &&
-    /build|edit|patch|writ|inspect|test|command|bash|shell|exec|powershell|workshop|terminal/i.test(
-      activity,
-    );
-  const harvesting = working && !building && !toolUse;
+    !delegating &&
+    (kind
+      ? ['building', 'testing', 'working'].includes(kind)
+      : /build|edit|patch|writ|test|command|bash|shell|exec|powershell|terminal/i.test(activity));
+  const harvesting = working && !building && !toolUse && !delegating;
   const traveling = harvesting || patrolling;
-  // These are visible routes on the board: the front of the hall to the farm or forest.
-  // Each villager has a slightly different doorway and departure time, so several agents
-  // can move at once without occupying exactly the same point.
+  // The route begins at the town hall steps and ends at the resource site's front edge.
+  // Cottages sit farther south, clear of both paths.
   const doorways = [
-    [-12, 40],
-    [13, 42],
-    [0, 53],
-    [26, 48],
-    [-22, 53],
-    [7, 61],
-    [-9, 48],
-    [23, 59],
+    [14, 17],
+    [8, 18],
+    [20, 21],
+    [4, 22],
+    [17, 14],
+    [2, 16],
+    [24, 18],
+    [10, 23],
   ];
   const [originX, originY] = harvesting ? doorways[index] : [x, y];
-  const forestTrip = index % 2 === 1;
+  // Reading/searching mines information; planning gathers grain. Both are metaphors,
+  // but the worker now visibly visits the corresponding quarry or granary.
+  const stoneTrip =
+    kind === 'gathering' || (!kind && /read|search|inspect|research/i.test(activity));
   const patrolStops = [
-    [53, 43],
-    [-52, 34],
-    [25, 53],
-    [49, 23],
-    [-51, 25],
-    [42, 45],
-    [-22, 50],
-    [52, -10],
+    [78, 34],
+    [-76, 23],
+    [14, 17],
+    [78, 34],
+    [-76, 23],
+    [14, 17],
+    [-76, 23],
+    [78, 34],
   ];
   const [destinationX, destinationY] = patrolling
     ? patrolStops[index]
-    : forestTrip
-      ? [-75, 13]
-      : [72, 30];
+    : stoneTrip
+      ? [-76, 23]
+      : [78, 34];
   const routeDuration = `${patrolling ? 7.5 + (index % 3) : 8.5 + (index % 3)}s`;
   const routeDelay = `-${index * 1.9}s`;
   const routeStyle = {
@@ -195,7 +252,8 @@ function Worker({
   return (
     <g transform={`translate(${originX} ${originY})`}>
       <g
-        className={`worker ${harvesting ? 'resource-route' : ''} ${patrolling ? 'idle-route' : ''} ${traveling ? 'walking' : ''} ${toolUse ? 'tool-action' : ''}`}
+        className={`worker ${harvesting ? 'resource-route' : ''} ${patrolling ? 'idle-route' : ''} ${traveling ? 'walking' : ''} ${toolUse ? 'tool-action' : ''} ${delegating ? 'delegating-action' : ''}`}
+        data-resource={harvesting ? (stoneTrip ? 'quarry' : 'granary') : undefined}
         style={routeStyle}
       >
         <title>{`${name}: ${activity}`}</title>
@@ -235,16 +293,29 @@ function Worker({
               <WalkingPose faceLeft={destinationX < originX} lead={lead} />
             </g>
             <g className="route-harvest">
-              <Pose frame={patrolling ? 0 : forestTrip ? 6 : 7} lead={lead} />
+              <Pose frame={patrolling ? 0 : stoneTrip ? 6 : 7} lead={lead} />
             </g>
             <g className="route-return">
-              <WalkingPose faceLeft={destinationX > originX} carrying={harvesting} lead={lead} />
+              <WalkingPose
+                faceLeft={destinationX > originX}
+                carrying={harvesting ? (stoneTrip ? 'stone' : 'grain') : undefined}
+                lead={lead}
+              />
             </g>
           </>
         ) : (
           <>
+            {building && (
+              <g className="build-site" transform="translate(13 1)" pointerEvents="none">
+                <path d="M-4 1 8-4 19 0 7 5Z" fill="#625b48" stroke="#b5a481" strokeWidth=".8" />
+                <path d="M0-5 10-9 19-6 9-2Z" fill="#ada38d" stroke="#574f40" strokeWidth=".8" />
+                <path d="M0-5v6m10-10v7m9-4v6" stroke="#575344" strokeWidth=".8" />
+                <path d="M-5-10 1-13M10-9 14-15" stroke="#916b3d" strokeWidth="1.5" />
+              </g>
+            )}
             <Pose frame={building ? 4 : 0} className={building ? 'pose-primary' : ''} lead={lead} />
             {building && <Pose frame={5} className="pose-secondary" lead={lead} />}
+            {delegating && <path d="m8-22 11-3 2 11-11 3Z" fill="#e8d5a5" stroke="#674d32" />}
           </>
         )}
         <rect
@@ -358,6 +429,8 @@ export default function Settlement({
       <Scenery kind="forest" x={-67} y={-14} width={67} />
       <Scenery kind="farm" x={65} y={8} width={65} />
       <Scenery kind="hall" x={-2} y={9} width={116} />
+      <ResourceScenery kind="quarry" x={-76} y={18} width={46} />
+      <ResourceScenery kind="granary" x={78} y={29} width={45} />
       <g transform="translate(34 -54)" pointerEvents="none">
         <path d="M0-21v30" stroke="#d1bd8b" strokeWidth="1.4" />
         <path
@@ -371,9 +444,8 @@ export default function Settlement({
           {h.mark}
         </text>
       </g>
-      {session.eventCount > 25 && <Scenery kind="cottage" x={-52} y={38} width={61} />}
-      {session.eventCount > 65 && <Scenery kind="cottage" x={66} y={49} width={54} />}
-      <Scenery kind="forest" x={-83} y={48} width={38} />
+      {session.eventCount > 25 && <Scenery kind="cottage" x={-34} y={66} width={41} />}
+      {session.eventCount > 65 && <Scenery kind="cottage" x={40} y={66} width={41} />}
       {present.slice(0, 8).map((a, i) => (
         <Worker
           key={a.id}
@@ -384,6 +456,7 @@ export default function Settlement({
           status={a.status}
           name={a.name}
           activity={a.activity}
+          kind={a.kind}
           lead={!a.parentId}
           sessionStatus={session.status}
         />

@@ -6,6 +6,7 @@ export type Agent = {
   name: string;
   status: Status;
   activity: string;
+  kind?: string;
   updatedAt: number;
 };
 export type Activity = { at: number; agentId: string; text: string; kind: string };
